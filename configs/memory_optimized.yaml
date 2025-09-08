@@ -1,0 +1,68 @@
+# Memory-optimized configuration for Edge-Cloud Speculative Decoding
+# Use this config when running into memory issues
+
+# Model Configuration
+models:
+  edge:
+    name: "Qwen/Qwen2.5-Omni-3B"
+    device: "cuda"
+    dtype: "float16"  # Use float16 to reduce memory usage
+    
+  cloud:
+    name: "Qwen/Qwen2.5-Omni-7B"
+    device: "cuda"
+    dtype: "float16"
+
+# Audio Processing
+audio:
+  sample_rate: 16000
+  n_mels: 80
+  n_fft: 1024
+  hop_length: 256
+  feature_type: "mel"
+  normalize: true
+
+# Decoding Parameters
+decoding:
+  max_tokens: 50  # Reduced from 100
+  temperature: 0.7
+  top_p: 0.9
+  draft_length: 16  # Reduced from 32
+
+# Memory Optimization
+memory:
+  low_cpu_mem_usage: true
+  max_gpu_memory: "8GB"  # Adjust based on your GPU
+  offload_folder: "offload"
+  device_map: "auto"
+
+# Cache Configuration (Reduced)
+cache:
+  kv_cache_size: 512  # Reduced from 1024
+  prefix_cache_size: 256  # Reduced from 512
+
+# Evaluation
+evaluation:
+  metrics: ["bleu", "cider"]
+  test_split: 0.2
+  random_seed: 42
+
+# Logging
+logging:
+  level: "INFO"
+  save_dir: "experiments/logs"
+  log_interval: 50
+
+# Data
+data:
+  train_path: "data/processed/unified(mer_secap)/unified_manifest.json"
+  test_path: "data/processed/unified(mer_secap)/unified_manifest.json"
+  cache_dir: "experiments/cache"
+  
+# Training (if needed)
+training:
+  batch_size: 4  # Reduced from 8
+  learning_rate: 1e-5
+  num_epochs: 10
+  warmup_steps: 100
+  gradient_accumulation_steps: 4

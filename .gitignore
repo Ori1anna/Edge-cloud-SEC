@@ -1,0 +1,9 @@
+
+/data/
+
+!/data/.gitkeep
+
+.DS_Store
+venv/ .venv/ __pycache__/ *.pyc
+.idea/ *.iml .vscode/
+target/ build/ out/

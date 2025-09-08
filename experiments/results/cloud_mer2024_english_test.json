@@ -1,0 +1,138 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/mer2024/manifest_audio_only_final.json",
+    "caption_type": "audio_only",
+    "language": "english",
+    "prompt_type": "detailed",
+    "max_samples": 5,
+    "total_samples": 5
+  },
+  "metrics": {
+    "avg_bleu": 0.18457332636196974,
+    "avg_cider": 0.9745400336794348,
+    "latency_metrics": {
+      "ttft_mean": 2.4984638690948486,
+      "ttft_min": 1.2370827198028564,
+      "ttft_max": 3.8207998275756836,
+      "itps_mean": 5264.241946650246,
+      "itps_min": 3104.049086358621,
+      "itps_max": 6534.696057832698,
+      "otps_mean": 36.79991045674681,
+      "otps_min": 30.769470446536467,
+      "otps_max": 38.47361982668227,
+      "oet_mean": 2.4984638690948486,
+      "oet_min": 1.2370827198028564,
+      "oet_max": 3.8207998275756836,
+      "total_time_mean": 2.5324625968933105,
+      "total_time_min": 1.264392375946045,
+      "total_time_max": 3.849775552749634,
+      "avg_input_tokens": 163.2,
+      "avg_output_tokens": 92.6,
+      "total_input_tokens": 816,
+      "total_output_tokens": 463
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The speaker sounds hesitant and uncertain. The tone is somewhat subdued, with a slight lift at the end when saying \"I also have this experience\". The speed of speech is moderate, and the volume is relatively low, which contributes to the overall sense of doubt. The emotion can be described as a mix of hesitation and uncertainty.",
+      "bleu_score": 0.11641159584053266,
+      "cider_score": 0.9816383252040193,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.1449832916259766,
+        "itps": 3104.049086358621,
+        "otps": 30.769470446536467,
+        "oet": 2.1449832916259766,
+        "total_time": 2.1992480754852295,
+        "input_tokens": 165,
+        "output_tokens": 66
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "Well, um, the tone of the speech sounds pretty cheerful and upbeat. It's not rushed, but also not too slow. The volume seems to be at a normal, clear level. As for the emotion, it's likely to be something like happiness or contentment. The speaker seems to be looking forward to something, which gives off a positive and excited vibe. So, overall, it sounds like the speaker is in a good mood, ready for whatever is coming up. What do you think? Do you have any other insights about this audio?",
+      "bleu_score": 0.3994856351236045,
+      "cider_score": 0.9581827896747984,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.9207167625427246,
+        "itps": 6417.764815176236,
+        "otps": 38.34675153591229,
+        "oet": 2.9207167625427246,
+        "total_time": 2.952371835708618,
+        "input_tokens": 196,
+        "output_tokens": 112
+      }
+    },
+    {
+      "file_id": "sample_00000021",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. She maintains direct eye contact with the other person and engages in a serious conversation. In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. This pause may indicate that the character has some doubts about the other person's true intentions or emotional feelings, or it could be due to uncertainty about the future or concerns about the relationship.In the text, the subtitle reads, \"Are you genuinely willing to be with Xiaochuan?\" Based on the video clues of the woman's calm facial expression, natural posture, absence of nervousness or unease, and her direct eye contact and serious conversation with the other person, it can be inferred that she is asking the question in a calm and sincere manner. However, based on the pause in the audio when the character expresses this sentence, it can be speculated that she may have some doubts or concerns about the other person's true intentions or emotional feelings. This pause may imply her uncertainty about the future or her worries about the relationship, so she may have a certain emotional state of questioning or concern when asking this question.",
+      "generated_text": "Well, in the audio, the speaker's tone seems quite steady and calm. Their speed of speaking is moderate, not too fast or too slow. The volume is also at a normal level, not too loud or too soft. Emotionally, the speaker seems to be very calm and composed. There's no sign of excitement, anger, or sadness. It gives off an impression of someone who is really at ease and comfortable, perhaps even a bit indifferent. It's like they're just stating a fact without any particular emotional baggage attached. So, in summary, the speaker's emotional features show a state of calmness and composure. What do you think about it? Do you have any other thoughts on the audio?",
+      "bleu_score": 0.20132369687380833,
+      "cider_score": 0.9736714633420743,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 3.8207998275756836,
+        "itps": 5887.850994624577,
+        "otps": 38.47361982668227,
+        "oet": 3.8207998275756836,
+        "total_time": 3.849775552749634,
+        "input_tokens": 164,
+        "output_tokens": 147
+      }
+    },
+    {
+      "file_id": "sample_00000033",
+      "dataset": "mer2024",
+      "reference_caption": "Taking these clues into consideration, he may be dealing with some serious matters or waiting for important results.In the audio, the speech is fast-paced, with no pauses in the sentences, indicating a sense of urgency. The tone is low and monotonous.In the text, the subtitle reads: \"You know that the members of the dragon boat team are all rookies, how could a group of rookies like this possibly win the race?\" This sentence may be the male's evaluation or reaction to a certain situation or event. Audio, we can infer that this sentence may carry a sense of concern or pessimism. The male may hold a less optimistic attitude towards the performance of the dragon boat team, believing that as newcomers or inexperienced members, it would be difficult for them to win the race. Therefore, this sentence expresses the male's concern and pessimistic expectation for the outcome of the race.",
+      "generated_text": "Well, it seems like there's some frustration or disappointment in the tone. The speaker's speed might be a bit quicker, like they're trying to get their point across quickly. The volume could be moderate, but with a bit of a raised pitch, showing some irritation. Overall, the emotion seems to be negative, possibly annoyance or dissatisfaction.Does that help? If you want to talk more about it or have other questions, feel free to ask.",
+      "bleu_score": 0.18672442169358716,
+      "cider_score": 0.9901579648974153,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.368736743927002,
+        "itps": 6534.696057832698,
+        "otps": 38.417101534523404,
+        "oet": 2.368736743927002,
+        "total_time": 2.3965251445770264,
+        "input_tokens": 175,
+        "output_tokens": 91
+      }
+    },
+    {
+      "file_id": "sample_00000039",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. It can be seen that her emotions are intense. On the other hand, the male character is lowering his head, seeming to have done something wrong, which has caused the female character's dissatisfaction. As time passes, she raises her finger and points at the other person, tilting her head up to look down at him. At the same time, her mouth is wide open, seemingly arguing with the other person. In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. This sentence may be a decision or declaration expressed by the female character to the male character. Audio, we can infer that this sentence carries a sense of anger or determination. The female character may be dissatisfied with the male character's behavior or attitude and is expressing her decision and anger through this sentence.",
+      "generated_text": "I'm not sure what the audio content is. If you can provide the audio, I can give you a detailed analysis of the emotional features like tone, speed, and volume, and then generate an English emotion description for you.",
+      "bleu_score": 0.018921282278316062,
+      "cider_score": 0.9690496252788664,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 1.2370827198028564,
+        "itps": 4376.8487792590995,
+        "otps": 37.992608940079606,
+        "oet": 1.2370827198028564,
+        "total_time": 1.264392375946045,
+        "input_tokens": 116,
+        "output_tokens": 47
+      }
+    }
+  ]
+}

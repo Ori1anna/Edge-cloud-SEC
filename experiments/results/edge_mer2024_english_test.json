@@ -1,0 +1,138 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/mer2024/manifest_audio_only_final.json",
+    "caption_type": "audio_only",
+    "language": "english",
+    "prompt_type": "detailed",
+    "max_samples": 5,
+    "total_samples": 5
+  },
+  "metrics": {
+    "avg_bleu": 0.14309449098909982,
+    "avg_cider": 0.9783826439485435,
+    "latency_metrics": {
+      "ttft_mean": 2.2448076248168944,
+      "ttft_min": 1.863804578781128,
+      "ttft_max": 2.460130453109741,
+      "itps_mean": 5001.492264164694,
+      "itps_min": 2798.8714895819853,
+      "itps_max": 6049.086796700494,
+      "otps_mean": 29.70141802574713,
+      "otps_min": 26.001832356364552,
+      "otps_max": 30.892670713429766,
+      "oet_mean": 2.2448076248168944,
+      "oet_min": 1.863804578781128,
+      "oet_max": 2.460130453109741,
+      "total_time_mean": 2.2807212829589845,
+      "total_time_min": 1.8916800022125244,
+      "total_time_max": 2.4874489307403564,
+      "avg_input_tokens": 163.2,
+      "avg_output_tokens": 66.6,
+      "total_input_tokens": 816,
+      "total_output_tokens": 333
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The tone of the speaker is somewhat hesitating and uncertain. The speed of speaking is relatively slow, indicating a sense of hesitation or lack of confidence. The volume is not too high, suggesting a calm but somewhat hesitant demeanor. Overall, the emotion conveyed is one of uncertainty and a touch of hesitation.",
+      "bleu_score": 0.10284976338207655,
+      "cider_score": 0.9795585815260774,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.3459885120391846,
+        "itps": 2798.8714895819853,
+        "otps": 26.001832356364552,
+        "oet": 2.3459885120391846,
+        "total_time": 2.4058609008789062,
+        "input_tokens": 165,
+        "output_tokens": 61
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "The audio features a calm and composed tone. The speaker's voice is steady and even, with a slow and measured pace. The volume is moderate, neither too loud nor too soft. The emotion conveyed is one of tranquility and contentment, as if the speaker is in a relaxed state. This could suggest a sense of satisfaction or ease in the conversation.",
+      "bleu_score": 0.33644285349544584,
+      "cider_score": 0.9706891572688483,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.3804874420166016,
+        "itps": 5893.368011298058,
+        "otps": 30.66598828102152,
+        "oet": 2.3804874420166016,
+        "total_time": 2.4145588874816895,
+        "input_tokens": 196,
+        "output_tokens": 73
+      }
+    },
+    {
+      "file_id": "sample_00000021",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. She maintains direct eye contact with the other person and engages in a serious conversation. In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. This pause may indicate that the character has some doubts about the other person's true intentions or emotional feelings, or it could be due to uncertainty about the future or concerns about the relationship.In the text, the subtitle reads, \"Are you genuinely willing to be with Xiaochuan?\" Based on the video clues of the woman's calm facial expression, natural posture, absence of nervousness or unease, and her direct eye contact and serious conversation with the other person, it can be inferred that she is asking the question in a calm and sincere manner. However, based on the pause in the audio when the character expresses this sentence, it can be speculated that she may have some doubts or concerns about the other person's true intentions or emotional feelings. This pause may imply her uncertainty about the future or her worries about the relationship, so she may have a certain emotional state of questioning or concern when asking this question.",
+      "generated_text": "The tone of voice is somewhat soft and gentle. The speed of speech is quite slow. The volume is relatively low. The emotion seems to be one of doubt or uncertainty. The speaker might be asking for confirmation about whether the other person truly wants to be with Xiaochuan.",
+      "bleu_score": 0.014666962914633142,
+      "cider_score": 0.9759176978834914,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 1.863804578781128,
+        "itps": 6049.086796700494,
+        "otps": 30.582605413104137,
+        "oet": 1.863804578781128,
+        "total_time": 1.8916800022125244,
+        "input_tokens": 164,
+        "output_tokens": 57
+      }
+    },
+    {
+      "file_id": "sample_00000033",
+      "dataset": "mer2024",
+      "reference_caption": "Taking these clues into consideration, he may be dealing with some serious matters or waiting for important results.In the audio, the speech is fast-paced, with no pauses in the sentences, indicating a sense of urgency. The tone is low and monotonous.In the text, the subtitle reads: \"You know that the members of the dragon boat team are all rookies, how could a group of rookies like this possibly win the race?\" This sentence may be the male's evaluation or reaction to a certain situation or event. Audio, we can infer that this sentence may carry a sense of concern or pessimism. The male may hold a less optimistic attitude towards the performance of the dragon boat team, believing that as newcomers or inexperienced members, it would be difficult for them to win the race. Therefore, this sentence expresses the male's concern and pessimistic expectation for the outcome of the race.",
+      "generated_text": "The speaker's tone is somewhat harsh and critical, with a sense of disappointment. The speech is delivered at a moderate pace, neither too slow nor too fast. The volume is relatively low, indicating a somewhat subdued emotion. It seems like the speaker is expressing a negative emotion, possibly anger or frustration towards the situation being discussed.",
+      "bleu_score": 0.1414415600735682,
+      "cider_score": 0.9890481500345162,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.1736271381378174,
+        "itps": 5908.611723793731,
+        "otps": 30.363993364815688,
+        "oet": 2.1736271381378174,
+        "total_time": 2.2040576934814453,
+        "input_tokens": 175,
+        "output_tokens": 66
+      }
+    },
+    {
+      "file_id": "sample_00000039",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. It can be seen that her emotions are intense. On the other hand, the male character is lowering his head, seeming to have done something wrong, which has caused the female character's dissatisfaction. As time passes, she raises her finger and points at the other person, tilting her head up to look down at him. At the same time, her mouth is wide open, seemingly arguing with the other person. In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. This sentence may be a decision or declaration expressed by the female character to the male character. Audio, we can infer that this sentence carries a sense of anger or determination. The female character may be dissatisfied with the male character's behavior or attitude and is expressing her decision and anger through this sentence.",
+      "generated_text": "The tone of the voice is quite harsh and forceful. The speed of speech is quite fast. The volume is quite loud. This kind of tone usually indicates anger or intense frustration. It seems like the speaker is really upset or angry about something. So, overall, it's an expression of strong negative emotions. What do you think might have caused such an intense reaction?",
+      "bleu_score": 0.12007131507977535,
+      "cider_score": 0.9766996330297832,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 2.460130453109741,
+        "itps": 4357.523299449196,
+        "otps": 30.892670713429766,
+        "oet": 2.460130453109741,
+        "total_time": 2.4874489307403564,
+        "input_tokens": 116,
+        "output_tokens": 76
+      }
+    }
+  ]
+}

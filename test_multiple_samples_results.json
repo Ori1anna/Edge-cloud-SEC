@@ -1,0 +1,205 @@
+{
+  "summary": {
+    "total_samples": 5,
+    "successful_tests": 5,
+    "failed_tests": 0,
+    "total_time": 25.596421718597412
+  },
+  "results": [
+    {
+      "sample_idx": 0,
+      "audio_file": "tx_emotion_00309000349.wav",
+      "original_method": {
+        "text": "说话人的情绪是高兴的。",
+        "tokens": 8,
+        "time": 2.2810115814208984,
+        "ttft": 1.0065839290618896,
+        "otps": 7.947673084206495,
+        "gpu_util": 37
+      },
+      "block_method": {
+        "text": "嗯…这个音频里说话人的情感状态不太好。他/她好像很烦恼，眉头紧锁，声音有点低沉，语气也不太舒缓。你要是还有类似的问题可以随时跟我说哦。",
+        "tokens": 43,
+        "blocks_count": 1,
+        "blocks_need_verification": 1,
+        "time": 2.691420316696167,
+        "ttft": 1.9500737190246582,
+        "otps": 22.0504484422808,
+        "gpu_util": 41
+      },
+      "uncertainty_stats": {
+        "avg_entropy": 6.793359279632568,
+        "avg_margin": 0.0,
+        "avg_log_prob": -0.675456698897273,
+        "entropy_count": 1,
+        "margin_count": 1,
+        "log_prob_count": 43
+      },
+      "blocks_detail": [
+        {
+          "block_idx": 0,
+          "text": "嗯…这个音频里说话人的情感状态不太好。他/她好像很烦恼，眉头紧锁，声音有点低沉，语气也不太舒缓。你要是还有类似的问题可以随时跟我说哦。",
+          "tokens_count": 43,
+          "should_verify": true,
+          "generation_time": 1.4141449928283691
+        }
+      ]
+    },
+    {
+      "sample_idx": 1,
+      "audio_file": "tx_emulate_02_039_0002_000034.wav",
+      "original_method": {
+        "text": "说话人的情感状态是愤怒的。如果还有关于这个音频的问题，或者其他事，都可以跟我说哦。",
+        "tokens": 23,
+        "time": 1.9886023998260498,
+        "ttft": 0.7582478523254395,
+        "otps": 30.333089542505444,
+        "gpu_util": 41
+      },
+      "block_method": {
+        "text": "嗯…说话人的情绪有点紧张，有点急促。你要是还有类似的情况可以随时告诉我呀。",
+        "tokens": 22,
+        "blocks_count": 1,
+        "blocks_need_verification": 1,
+        "time": 2.0064613819122314,
+        "ttft": 1.2773716449737549,
+        "otps": 17.22286547268083,
+        "gpu_util": 41
+      },
+      "uncertainty_stats": {
+        "avg_entropy": 5.40338134765625,
+        "avg_margin": 0.0,
+        "avg_log_prob": -0.9367488324642181,
+        "entropy_count": 1,
+        "margin_count": 1,
+        "log_prob_count": 22
+      },
+      "blocks_detail": [
+        {
+          "block_idx": 0,
+          "text": "嗯…说话人的情绪有点紧张，有点急促。你要是还有类似的情况可以随时告诉我呀。",
+          "tokens_count": 22,
+          "should_verify": true,
+          "generation_time": 0.7426526546478271
+        }
+      ]
+    },
+    {
+      "sample_idx": 2,
+      "audio_file": "tx_emotion_00205000110.wav",
+      "original_method": {
+        "text": "说话人的情感状态是愤怒。",
+        "tokens": 8,
+        "time": 1.5109801292419434,
+        "ttft": 0.28130435943603516,
+        "otps": 28.438947821635495,
+        "gpu_util": 31
+      },
+      "block_method": {
+        "text": "嗯…这得看音频的具体内容呢。如果音频里说话人一直在重复一些词语或者句子，那可能有点烦躁，或者是在强调某些观点。你能给我说说音频里具体说了啥吗。",
+        "tokens": 44,
+        "blocks_count": 1,
+        "blocks_need_verification": 1,
+        "time": 2.724397659301758,
+        "ttft": 1.9949462413787842,
+        "otps": 22.055732173309043,
+        "gpu_util": 42
+      },
+      "uncertainty_stats": {
+        "avg_entropy": 8.286077499389648,
+        "avg_margin": 0.0,
+        "avg_log_prob": -0.8752462569285523,
+        "entropy_count": 1,
+        "margin_count": 1,
+        "log_prob_count": 44
+      },
+      "blocks_detail": [
+        {
+          "block_idx": 0,
+          "text": "嗯…这得看音频的具体内容呢。如果音频里说话人一直在重复一些词语或者句子，那可能有点烦躁，或者是在强调某些观点。你能给我说说音频里具体说了啥吗。",
+          "tokens_count": 44,
+          "should_verify": true,
+          "generation_time": 1.4593186378479004
+        }
+      ]
+    },
+    {
+      "sample_idx": 3,
+      "audio_file": "tx_emulate_02_043_0003_000020.wav",
+      "original_method": {
+        "text": "说话人的情绪是愤怒的。",
+        "tokens": 8,
+        "time": 1.5265982151031494,
+        "ttft": 0.29744935035705566,
+        "otps": 26.89533525757198,
+        "gpu_util": 38
+      },
+      "block_method": {
+        "text": "嗯…这个音频里说话人的情感状态不太好呢，他/她很愤怒。如果还有类似的问题，你可以随时再问我哦。",
+        "tokens": 29,
+        "blocks_count": 1,
+        "blocks_need_verification": 1,
+        "time": 2.23386549949646,
+        "ttft": 1.5056018829345703,
+        "otps": 19.26139992829716,
+        "gpu_util": 44
+      },
+      "uncertainty_stats": {
+        "avg_entropy": 4.553864479064941,
+        "avg_margin": 0.0,
+        "avg_log_prob": -0.5174824384779766,
+        "entropy_count": 1,
+        "margin_count": 1,
+        "log_prob_count": 29
+      },
+      "blocks_detail": [
+        {
+          "block_idx": 0,
+          "text": "嗯…这个音频里说话人的情感状态不太好呢，他/她很愤怒。如果还有类似的问题，你可以随时再问我哦。",
+          "tokens_count": 29,
+          "should_verify": true,
+          "generation_time": 0.969456672668457
+        }
+      ]
+    },
+    {
+      "sample_idx": 4,
+      "audio_file": "tx_emotion_00302000216.wav",
+      "original_method": {
+        "text": "说话人的情感状态是愤怒的。",
+        "tokens": 9,
+        "time": 1.5437028408050537,
+        "ttft": 0.3150599002838135,
+        "otps": 28.5659964720759,
+        "gpu_util": 37
+      },
+      "block_method": {
+        "text": "嗯…这个音频里说话人的情感状态是平静的。你要是还有类似的问题可以再问我呀。",
+        "tokens": 23,
+        "blocks_count": 1,
+        "blocks_need_verification": 1,
+        "time": 2.0394558906555176,
+        "ttft": 1.309436559677124,
+        "otps": 17.564806656743457,
+        "gpu_util": 42
+      },
+      "uncertainty_stats": {
+        "avg_entropy": 3.5805768966674805,
+        "avg_margin": 0.0,
+        "avg_log_prob": -0.45454118044480035,
+        "entropy_count": 1,
+        "margin_count": 1,
+        "log_prob_count": 23
+      },
+      "blocks_detail": [
+        {
+          "block_idx": 0,
+          "text": "嗯…这个音频里说话人的情感状态是平静的。你要是还有类似的问题可以再问我呀。",
+          "tokens_count": 23,
+          "should_verify": true,
+          "generation_time": 0.7733592987060547
+        }
+      ]
+    }
+  ]
+}
