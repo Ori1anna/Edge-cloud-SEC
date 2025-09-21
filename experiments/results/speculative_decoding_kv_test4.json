@@ -1,0 +1,159 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 2,
+    "total_samples": 2,
+    "speculative_decoding_config": {
+      "entropy_threshold": 2.0,
+      "prob_threshold": 0.15,
+      "k": 5
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.02774413102684003,
+    "avg_cider": 0.2618867045334929,
+    "latency_metrics": {
+      "ttft_mean": 0.719035267829895,
+      "ttft_min": 0.3376147747039795,
+      "ttft_max": 1.1004557609558105,
+      "itps_mean": 14949.429938341047,
+      "itps_min": 3658.713030749821,
+      "itps_max": 26240.14684593227,
+      "otps_mean": 3.7029968347351874,
+      "otps_min": 3.3239568398522086,
+      "otps_max": 4.082036829618166,
+      "oet_mean": 5.630136847496033,
+      "oet_min": 3.911001443862915,
+      "oet_max": 7.34927225112915,
+      "total_time_mean": 5.7569499015808105,
+      "total_time_min": 4.135478258132935,
+      "total_time_max": 7.3784215450286865,
+      "cpu_percent_mean": 0.35500000000000004,
+      "cpu_percent_min": 0.34,
+      "cpu_percent_max": 0.37000000000000005,
+      "ram_gb_mean": 6.231624603271484,
+      "ram_gb_min": 6.212879180908203,
+      "ram_gb_max": 6.250370025634766,
+      "gpu_util_mean": 68.5,
+      "gpu_util_min": 68.0,
+      "gpu_util_max": 69.0,
+      "gpu_memory_gb_mean": 34.559814453125,
+      "gpu_memory_gb_min": 34.559814453125,
+      "gpu_memory_gb_max": 34.559814453125,
+      "avg_input_tokens": 789.0,
+      "avg_output_tokens": 21.5,
+      "total_input_tokens": 1578,
+      "total_output_tokens": 43
+    },
+    "speculative_decoding_metrics": {
+      "total_time_mean": 5.7569499015808105,
+      "avg_cloud_calls": 15.0,
+      "avg_acceptance_rate": 0.29293478260869565,
+      "avg_correction_rate": 1.0,
+      "avg_cloud_call_rate": 0.9027777777777777,
+      "total_samples": 2
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音低沉，语速缓慢，情绪沉重。",
+      "bleu_score": 0.02284411468856457,
+      "cider_score": 0.16012815380508716,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 1.1004557609558105,
+        "itps": 3658.713030749821,
+        "otps": 3.3239568398522086,
+        "oet": 3.911001443862915,
+        "total_time": 4.135478258132935,
+        "input_tokens": 820,
+        "output_tokens": 13,
+        "cpu_percent": 0.34,
+        "ram_gb": 6.212879180908203,
+        "gpu_util": 69,
+        "gpu_memory_gb": 34.559814453125,
+        "cloud_calls": 8,
+        "total_draft_tokens": 40,
+        "total_accepted_tokens": 13,
+        "total_corrections": 8,
+        "acceptance_rate": 0.325,
+        "correction_rate": 1.0,
+        "prefill_time": 0.7379119396209717,
+        "cloud_call_rate": 0.8888888888888888
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 4.135478258132935,
+        "output_tokens": 13,
+        "cloud_calls": 8,
+        "total_draft_tokens": 40,
+        "total_accepted_tokens": 13,
+        "total_corrections": 8,
+        "acceptance_rate": 0.325,
+        "correction_rate": 1.0,
+        "cloud_call_rate": 0.8888888888888888
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 2.0,
+        "prob_threshold": 0.15,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "情绪：矛盾，声音特征：语调忽高忽低，语速快慢交错，音量有时高，量：有时低。",
+      "bleu_score": 0.032644147365115485,
+      "cider_score": 0.3636452552618986,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.3376147747039795,
+        "itps": 26240.14684593227,
+        "otps": 4.082036829618166,
+        "oet": 7.34927225112915,
+        "total_time": 7.3784215450286865,
+        "input_tokens": 758,
+        "output_tokens": 30,
+        "cpu_percent": 0.37000000000000005,
+        "ram_gb": 6.250370025634766,
+        "gpu_util": 68,
+        "gpu_memory_gb": 34.559814453125,
+        "cloud_calls": 22,
+        "total_draft_tokens": 115,
+        "total_accepted_tokens": 30,
+        "total_corrections": 22,
+        "acceptance_rate": 0.2608695652173913,
+        "correction_rate": 1.0,
+        "prefill_time": 0.0609745979309082,
+        "cloud_call_rate": 0.9166666666666666
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 7.3784215450286865,
+        "output_tokens": 30,
+        "cloud_calls": 22,
+        "total_draft_tokens": 115,
+        "total_accepted_tokens": 30,
+        "total_corrections": 22,
+        "acceptance_rate": 0.2608695652173913,
+        "correction_rate": 1.0,
+        "cloud_call_rate": 0.9166666666666666
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 2.0,
+        "prob_threshold": 0.15,
+        "k": 5
+      }
+    }
+  ]
+}

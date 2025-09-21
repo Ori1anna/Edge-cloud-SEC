@@ -190,6 +190,10 @@ class CloudModel:
                         temperature=temperature,
                         top_p=top_p,
                         do_sample=True,
+                        repetition_penalty=1.15,  # Anti-repetition penalty
+                        no_repeat_ngram_size=3,   # Prevent 3-gram repetition
+                        typical_p=0.95,           # Typical sampling for better quality
+                        min_new_tokens=2,         # Minimum tokens to generate
                         pad_token_id=self.processor.tokenizer.eos_token_id,
                         return_dict_in_generate=False,  # 减少内存开销
                         output_scores=False,  # 不返回scores以节省内存
@@ -379,32 +383,67 @@ class CloudModel:
         full_ids = torch.cat([ctx_ids, y], dim=1)
         full_mask = torch.cat([ctx_mask, torch.ones_like(y)], dim=1)
 
-        # 2) 一次前向，取 logits
-        # 使用 self.model.thinker(**inputs) 调用文本子模型
+        # 2) 组装多模态输入（文本 + 音频特征）
+        inputs = {
+            'input_ids': full_ids,
+            'attention_mask': full_mask,
+        }
+        
+        # 添加音频特征（如果存在）
+        has_audio = False
+        if 'input_features' in context:
+            inputs['input_features'] = context['input_features'].to(self.device)
+            has_audio = True
+        if 'feature_attention_mask' in context:
+            inputs['feature_attention_mask'] = context['feature_attention_mask'].to(self.device)
+            has_audio = True
+        
+        logger.debug(f"Cloud verification with audio features: {has_audio}, draft tokens: {draft_tokens}")
+        
+        # 3) 显式前向，稳健取得 logits
+        # 直接使用 thinker 子模型，它支持多模态输入且节省显存
         with torch.no_grad():
-            inputs = {
-                'input_ids': full_ids,
-                'attention_mask': full_mask,
-            }
-            out = self.model.thinker(**inputs)
+            out = self.model.thinker(**inputs, return_dict=True, use_cache=False)
         logits = out.logits[0]  # [m+k, V]
         m = ctx_ids.shape[1]
         k = len(draft_tokens)
+        
+        logger.debug(f"Cloud verification: context_length={m}, draft_length={k}, logits_shape={logits.shape}")
+        logger.debug(f"Full input sequence length: {full_ids.shape[1]}")
 
-        # 3) 逐位计算 p(yi) 并找首个未通过
+        # 4) 逐位阈值验收 + 首错纠正
         accepted = 0
+        probabilities = []
+        
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置
             probs = torch.softmax(logits[pos], dim=-1)
             p_i = probs[draft_tokens[i]].item()
+            probabilities.append(p_i)
+            
+            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.4f}, threshold={threshold:.4f}")
+            
+            # Additional debugging for extremely low probabilities
+            if p_i < 1e-6:
+                logger.warning(f"Extremely low probability for token {draft_tokens[i]}: {p_i:.2e}")
+                # Check if this token is in the top-k predictions
+                top_k_probs, top_k_indices = torch.topk(probs, k=min(10, probs.size(0)))
+                logger.warning(f"Top-10 tokens: {[(idx.item(), prob.item()) for idx, prob in zip(top_k_indices, top_k_probs)]}")
+            
             if p_i >= threshold:
                 accepted += 1
+                logger.debug(f"  -> ACCEPTED (p_i={p_i:.4f} >= {threshold:.4f})")
             else:
-                # 4) 首错纠正：直接按 p(·) 采样一个 token
+                # 首错纠正：直接按 p(·) 采样一个 token
                 corr = torch.multinomial(probs, 1).item()
+                logger.info(f"Cloud correction: accepted {accepted}/{k} tokens, first error at position {i}")
+                logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
+                logger.info(f"  -> Correction token: {corr} (replacing draft token {draft_tokens[i]})")
                 return draft_tokens[:accepted], corr, True
 
         # 全部通过
+        logger.info(f"Cloud correction: accepted {accepted}/{k} tokens (all passed)")
+        logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
         return draft_tokens, None, False
 
     
@@ -453,6 +492,9 @@ class CloudModel:
                     max_new_tokens=32,  # Generate some new tokens
                     temperature=0.7,
                     do_sample=True,
+                    repetition_penalty=1.15,  # Anti-repetition penalty
+                    no_repeat_ngram_size=3,   # Prevent 3-gram repetition
+                    typical_p=0.95,           # Typical sampling for better quality
                     pad_token_id=self.tokenizer.eos_token_id,
                     return_dict_in_generate=True
                 )

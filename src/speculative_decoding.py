@@ -101,38 +101,36 @@ class SimpleSpeculativeDecoding:
             logger.error(f"Error preparing initial context: {e}")
             raise
     
-    def _update_context(self, context: dict, new_tokens: List[int]) -> dict:
-        """Update context with new tokens"""
-        try:
-            if not new_tokens:
-                return context
-            
-            # Convert to tensor
-            new_tokens_tensor = torch.tensor([new_tokens], device=self.edge_model.device)
-            
-            # Update input_ids
-            new_input_ids = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
-            
-            # Update attention_mask
-            new_attention_mask = torch.cat([context['attention_mask'], 
-                                          torch.ones((1, len(new_tokens)), device=self.edge_model.device)], dim=1)
-            
-            return {
-                'input_ids': new_input_ids,
-                'attention_mask': new_attention_mask
-            }
-            
-        except Exception as e:
-            logger.error(f"Error updating context: {e}")
-            return context
     
     def _is_eos_token(self, token_id: int) -> bool:
-        """Check if token is EOS token"""
+        """Check if token is EOS token or should stop generation"""
         eos_token_id = self.edge_model.processor.tokenizer.eos_token_id
         im_end_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|im_end|>')
         endoftext_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|endoftext|>')
         
-        return token_id in [eos_token_id, im_end_id, endoftext_id]
+        # Standard EOS tokens
+        if token_id in [eos_token_id, im_end_id, endoftext_id]:
+            return True
+        
+        # Chinese punctuation and newline as stop conditions
+        try:
+            # Convert token to text to check for stop conditions
+            token_text = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
+            
+            # Stop on Chinese period, newline, or "Human" (conversation end)
+            if token_text in ['。', '\n', 'Human', 'Human:']:
+                return True
+                
+            # Stop if token contains newline (for multi-token newlines)
+            if '\n' in token_text:
+                return True
+                
+                
+        except Exception:
+            # If decoding fails, just check standard EOS tokens
+            pass
+        
+        return False
     
     def _decode_tokens(self, tokens: List[int]) -> str:
         """Decode tokens to text"""
@@ -221,17 +219,68 @@ class SimpleSpeculativeDecoding:
             current_context = context.copy()
             first_token_time = None  # Track TTFT
             
-            # Main speculative decoding loop
+            # Add timeout mechanism to prevent infinite loops
+            max_generation_time = 300.0  # 5 minutes maximum
+            generation_start_time = time.time()
+            
+            # Step 0: Perform multimodal prefill to get KV cache
+            logger.info("Performing multimodal prefill for efficient incremental generation...")
+            prefill_start_time = time.time()
+            current_context = self._prefill_multimodal_context(current_context)
+            prefill_time = time.time() - prefill_start_time
+            logger.info(f"Multimodal prefill completed in {prefill_time:.3f}s")
+            
+            # Main speculative decoding loop with incremental generation
             while len(generated_tokens) < max_new_tokens:
-                # Step 1: Edge model generates k draft tokens
-                logger.info(f"Edge generating {self.k} draft tokens...")
-                draft_start_time = time.time()
-                draft_tokens, draft_logits = self._generate_draft_tokens(current_context, self.k)
-                draft_end_time = time.time()
+                # Check for timeout
+                elapsed_time = time.time() - generation_start_time
+                if elapsed_time > max_generation_time:
+                    logger.warning(f"Generation timeout after {elapsed_time:.2f}s, stopping generation")
+                    break
                 
-                # Record TTFT when first draft tokens are generated
-                if first_token_time is None and draft_tokens:
-                    first_token_time = draft_end_time
+                # Step 1: Generate k draft tokens using incremental generation
+                logger.info(f"Edge generating {self.k} draft tokens incrementally...")
+                draft_start_time = time.time()
+                
+                # Cache KV state before draft generation for potential rollback
+                kv_before_draft = current_context.get('past_key_values')
+                ids_before_draft = current_context['input_ids'].shape[1]
+                logger.debug(f"Before draft generation: input_ids length={ids_before_draft}, KV cache present={kv_before_draft is not None}")
+                
+                # Use incremental generation with KV cache
+                try:
+                    if 'past_key_values' in current_context:
+                        logger.info("Using incremental generation with KV cache")
+                        draft_tokens, draft_logits = self._generate_draft_tokens_incremental(current_context, self.k)
+                    else:
+                        # Fallback to legacy method if no KV cache
+                        logger.warning("No KV cache available, falling back to legacy generation")
+                        draft_tokens, draft_logits = self._generate_draft_tokens(current_context, self.k)
+                except ValueError as e:
+                    # Handle case where model generation fails to return scores
+                    logger.error(f"Draft generation failed due to scores issue: {e}")
+                    logger.warning("Skipping this generation round due to model issue")
+                    continue
+                except Exception as e:
+                    # Handle other generation errors
+                    logger.error(f"Draft generation failed with error: {e}")
+                    logger.warning("Skipping this generation round due to error")
+                    continue
+                
+                draft_end_time = time.time()
+                draft_generation_time = draft_end_time - draft_start_time
+                
+                # Check for abnormally long generation time
+                if draft_generation_time > 30.0:  # 30 seconds threshold
+                    logger.warning(f"Abnormally long draft generation time: {draft_generation_time:.2f}s")
+                
+                # Check for empty or invalid tokens
+                if not draft_tokens or len(draft_tokens) == 0:
+                    logger.warning("Edge model generated no tokens, stopping generation")
+                    break
+                
+                # Note: TTFT will be recorded when first tokens are actually accepted
+                # This could be either Edge tokens (if uncertainty is low) or Cloud-verified tokens
                 
                 if not draft_tokens:
                     logger.info("Edge model finished generation")
@@ -244,29 +293,35 @@ class SimpleSpeculativeDecoding:
                 uncertainties = self._calculate_entropy_uncertainty(draft_logits)
                 logger.info(f"Token uncertainties: {uncertainties}")
                 
-                # Step 3: Check if we need Cloud verification
-                max_uncertainty = max(uncertainties) if uncertainties else 0
-                needs_cloud_verification = max_uncertainty > self.entropy_threshold
+                # Check for abnormal uncertainty patterns
+                if uncertainties and all(u == 0.0 for u in uncertainties):
+                    logger.warning("All uncertainties are 0.0 - this indicates a model issue!")
+                    logger.warning("Forcing cloud verification due to abnormal uncertainty pattern")
+                    needs_cloud_verification = True
+                    max_uncertainty = self.entropy_threshold + 0.1  # Force above threshold
+                else:
+                    # Step 3: Check if we need Cloud verification
+                    max_uncertainty = max(uncertainties) if uncertainties else 0
+                    needs_cloud_verification = max_uncertainty > self.entropy_threshold
                 
                 if needs_cloud_verification:
                     logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
                     cloud_calls += 1
                     
                     # Step 4: Cloud model verifies draft tokens
-                    # 构造瘦身上下文，不传音频特征
-                    ctx4cloud = {
-                        "input_ids": current_context["input_ids"],
-                        "attention_mask": current_context["attention_mask"],
-                    }
+                    # Pass full context including audio features
                     accepted_tokens, correction_token, needs_correction = self.cloud_model.verify_tokens(
-                        ctx4cloud, draft_tokens, self.prob_threshold
+                        current_context, draft_tokens, self.prob_threshold
                     )
                     
                     if needs_correction:
                         total_corrections += 1
-                        logger.info(f"Cloud correction: accepted {len(accepted_tokens)}/{len(draft_tokens)} tokens, correction: {correction_token}")
+                        should_stop = False  # Initialize should_stop for correction path
                         
-                        # TTFT already recorded when first draft tokens were generated
+                        # Record TTFT when first tokens are actually accepted
+                        if first_token_time is None and (accepted_tokens or correction_token is not None):
+                            first_token_time = time.time()
+                            logger.debug(f"TTFT recorded: first accepted tokens from Cloud verification")
                         
                         # Step 4: Replace + Discard logic
                         # - Accept all tokens before the first rejection
@@ -281,35 +336,83 @@ class SimpleSpeculativeDecoding:
                         if correction_token is not None:
                             generated_tokens.append(correction_token)
                             total_accepted_tokens += 1
+                            
+                            # Check for stop condition after correction
+                            if self._is_eos_token(correction_token):
+                                logger.info(f"Stop condition met in correction token {correction_token}, stopping generation")
+                                should_stop = True
                         
-                        # Step 5: Pass back to Edge
-                        # Update context with accepted tokens + correction token (discard rejected tokens)
-                        # 防止将 None 追加进上下文
+                        # CRITICAL: Fix KV consistency after correction
+                        # Step 1: Rollback both KV and input_ids to state before draft generation
+                        current_context['past_key_values'] = kv_before_draft
+                        
+                        # Rollback input_ids to length before draft generation
+                        if ids_before_draft < current_context['input_ids'].shape[1]:
+                            current_context['input_ids'] = current_context['input_ids'][:, :ids_before_draft]
+                            current_context['attention_mask'] = current_context['attention_mask'][:, :ids_before_draft]
+                            logger.info(f"Rolled back input_ids to length {ids_before_draft}")
+                        
+                        # Step 2: Advance KV cache with only accepted tokens + correction token
+                        tokens_to_advance = accepted_tokens + ([correction_token] if correction_token is not None else [])
+                        if kv_before_draft is not None and tokens_to_advance:
+                            logger.info(f"Advancing KV cache with {len(tokens_to_advance)} corrected tokens: {tokens_to_advance}")
+                            updated_kv = self._advance_kv_cache(kv_before_draft, tokens_to_advance, self.edge_model.device)
+                            current_context['past_key_values'] = updated_kv
+                        
+                        # Step 3: Update context with accepted tokens + correction token (discard rejected tokens)
                         append_list = accepted_tokens + ([correction_token] if correction_token is not None else [])
-                        current_context = self._update_context(current_context, append_list)
+                        current_context = self._update_context_incremental(current_context, append_list)
                         
                         # Step 6: Continue generation from corrected position
                         logger.info("Continuing generation from corrected position...")
                     else:
                         logger.info(f"Cloud accepted all {len(draft_tokens)} tokens")
+                        should_stop = False  # Initialize should_stop for acceptance path
                         
-                        # TTFT already recorded when first draft tokens were generated
+                        # Record TTFT when first tokens are actually accepted
+                        if first_token_time is None:
+                            first_token_time = time.time()
+                            logger.debug(f"TTFT recorded: all Edge tokens accepted by Cloud")
                         
                         generated_tokens.extend(draft_tokens)
                         total_accepted_tokens += len(draft_tokens)
-                        current_context = self._update_context(current_context, draft_tokens)
+                        current_context = self._update_context_incremental(current_context, draft_tokens)
+                        
+                        # Check for stop condition in accepted tokens
+                        for token in draft_tokens:
+                            if self._is_eos_token(token):
+                                logger.info(f"Stop condition met in accepted token {token}, stopping generation")
+                                should_stop = True
+                                break
                 else:
                     logger.info(f"Low uncertainty ({max_uncertainty:.3f} <= {self.entropy_threshold}), accepting all Edge tokens")
+                    should_stop = False  # Initialize should_stop for low uncertainty path
                     
-                    # TTFT already recorded when first draft tokens were generated
+                    # Record TTFT when first tokens are actually accepted
+                    if first_token_time is None:
+                        first_token_time = time.time()
+                        logger.debug(f"TTFT recorded: all Edge tokens accepted (low uncertainty)")
                     
                     generated_tokens.extend(draft_tokens)
                     total_accepted_tokens += len(draft_tokens)
-                    current_context = self._update_context(current_context, draft_tokens)
+                    current_context = self._update_context_incremental(current_context, draft_tokens)
+                    
+                    # Check for stop condition in accepted tokens
+                    for token in draft_tokens:
+                        if self._is_eos_token(token):
+                            logger.info(f"Stop condition met in accepted token {token}, stopping generation")
+                            should_stop = True
+                            break
                 
-                # Check for EOS token
-                if self.edge_model.processor.tokenizer.eos_token_id in generated_tokens:
-                    logger.info("EOS token found, stopping generation")
+                # Check for EOS token or other stop conditions (if not already set)
+                if not should_stop:
+                    for token in generated_tokens[-5:]:  # Check last 5 tokens
+                        if self._is_eos_token(token):
+                            logger.info(f"Stop condition met (token {token}), stopping generation")
+                            should_stop = True
+                            break
+                
+                if should_stop:
                     break
             
             # Wait for GPU monitoring to complete
@@ -397,6 +500,7 @@ class SimpleSpeculativeDecoding:
                 'total_corrections': total_corrections,
                 'acceptance_rate': total_accepted_tokens / total_draft_tokens if total_draft_tokens > 0 else 0,
                 'correction_rate': total_corrections / cloud_calls if cloud_calls > 0 else 0,
+                'prefill_time': current_context.get('prefill_time', 0.0),
                 'cloud_call_rate': cloud_calls / (total_draft_tokens // self.k + 1) if total_draft_tokens > 0 else 0
             }
             
@@ -411,9 +515,260 @@ class SimpleSpeculativeDecoding:
             traceback.print_exc()
             return "", {}
     
+    def _prefill_multimodal_context(self, context: dict) -> dict:
+        """
+        Perform multimodal prefill to get KV cache for efficient incremental generation
+        
+        Args:
+            context: Input context dictionary
+            
+        Returns:
+            Enhanced context with KV cache
+        """
+        try:
+            import time
+            
+            logger.info("Performing multimodal prefill with Edge model...")
+            prefill_start_time = time.time()
+            
+            with torch.no_grad():
+                # Prepare inputs for prefill using thinker
+                inputs = {
+                    'input_ids': context['input_ids'],
+                    'attention_mask': context['attention_mask'],
+                    'use_cache': True  # Enable KV caching
+                }
+                
+                # Add audio features if present
+                if 'input_features' in context:
+                    inputs['input_features'] = context['input_features']
+                if 'feature_attention_mask' in context:
+                    inputs['feature_attention_mask'] = context['feature_attention_mask']
+                
+                # Use thinker for multimodal prefill (more efficient than full model)
+                outputs = self.edge_model.model.thinker(**inputs, return_dict=True)
+                
+                # Extract past_key_values for incremental generation
+                past_key_values = outputs.past_key_values
+                
+                # Debug: check outputs
+                logger.debug(f"Prefill outputs logits shape: {outputs.logits.shape}")
+                logger.debug(f"Prefill past_key_values type: {type(past_key_values)}")
+                if past_key_values is not None:
+                    logger.debug(f"Past_key_values length: {len(past_key_values)}")
+                
+                # Store the last token position for incremental generation
+                last_token_id = context['input_ids'][0, -1:].clone()
+                
+                prefill_time = time.time() - prefill_start_time
+                logger.info(f"Edge prefill completed in {prefill_time:.3f}s")
+                
+                # Return enhanced context with KV cache
+                enhanced_context = context.copy()
+                enhanced_context['past_key_values'] = past_key_values
+                enhanced_context['last_token_id'] = last_token_id
+                enhanced_context['prefill_time'] = prefill_time
+                
+                return enhanced_context
+                
+        except Exception as e:
+            logger.error(f"Error in _prefill_multimodal_context: {e}")
+            import traceback
+            traceback.print_exc()
+            # Return original context if prefill fails
+            return context
+
+    def _generate_draft_tokens_incremental(self, context: dict, k: int) -> tuple[list, torch.Tensor]:
+        """
+        Generate k draft tokens using incremental generation with KV cache
+        
+        Args:
+            context: Context with past_key_values from prefill
+            k: Number of tokens to generate
+            
+        Returns:
+            Tuple of (draft_tokens, logits)
+        """
+        try:
+            import time
+            
+            logger.debug(f"Generating {k} tokens incrementally with KV cache...")
+            
+            with torch.no_grad():
+                draft_tokens = []
+                all_logits = []
+                current_past_key_values = context.get('past_key_values')
+                
+                # Start from the last token of the input sequence
+                # For incremental generation, we only need the last token
+                current_input_ids = context['input_ids'][0, -1:].unsqueeze(0)  # Shape: [1, 1]
+                
+                logger.debug(f"Starting incremental generation from token: {current_input_ids.item()}")
+                
+                # Generate k tokens incrementally
+                for step in range(k):
+                    # Prepare input for this step
+                    step_inputs = {
+                        'input_ids': current_input_ids,
+                        'past_key_values': current_past_key_values,
+                        'use_cache': True,
+                        'return_dict': True
+                    }
+                    
+                    # CRITICAL: Pass audio features on the first step to maintain multimodal context
+                    if step == 0:
+                        if 'input_features' in context:
+                            step_inputs['input_features'] = context['input_features']
+                        if 'feature_attention_mask' in context:
+                            step_inputs['feature_attention_mask'] = context['feature_attention_mask']
+                        logger.debug(f"Step {step+1}: Including audio features for multimodal context")
+                    else:
+                        logger.debug(f"Step {step+1}: Using KV cache only (audio context preserved)")
+                    
+                    # Debug: check input shapes
+                    logger.debug(f"Step {step+1}: input_ids={current_input_ids.item()}, past_key_values present: {current_past_key_values is not None}")
+                    
+                    # Call thinker for incremental generation
+                    outputs = self.edge_model.model.thinker(**step_inputs)
+                    
+                    # Get logits for this step - use float32 for better numerical stability
+                    logits = outputs.logits[0, -1, :].float()  # Shape: [vocab_size], convert to float32
+                    all_logits.append(logits)
+                    
+                    # Sample next token with enhanced anti-repetition logic
+                    # Apply temperature and repetition penalty
+                    logits_temp = logits / 0.7  # Temperature scaling
+                    
+                    # Simple repetition penalty: reduce probability of recently generated tokens
+                    if len(draft_tokens) > 0:
+                        recent_tokens = draft_tokens[-2:]  # Look at last 2 tokens
+                        for token_id in recent_tokens:
+                            if logits_temp[token_id] > 0:
+                                logits_temp[token_id] = logits_temp[token_id] / 1.15  # Penalty factor
+                    
+                    # Apply top-p filtering
+                    sorted_logits, sorted_indices = torch.sort(logits_temp, descending=True)
+                    cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
+                    sorted_indices_to_remove = cumulative_probs > 0.9  # top_p=0.9
+                    sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                    sorted_indices_to_remove[..., 0] = 0
+                    
+                    indices_to_remove = sorted_indices[sorted_indices_to_remove]
+                    logits_temp[indices_to_remove] = float('-inf')
+                    
+                    # Sample from filtered distribution
+                    probs = torch.softmax(logits_temp, dim=-1)
+                    next_token = torch.multinomial(probs, 1).item()
+                    draft_tokens.append(next_token)
+                    
+                    # Update for next iteration - keep the KV cache!
+                    current_past_key_values = outputs.past_key_values
+                    current_input_ids = torch.tensor([[next_token]], device=self.edge_model.device)
+                    
+                    logger.debug(f"Incremental step {step+1}: generated token {next_token}")
+                
+                # Stack logits: [k, vocab_size]
+                logits_tensor = torch.stack(all_logits, dim=0)
+                
+                # Update context with new KV cache for next iteration
+                context['past_key_values'] = current_past_key_values
+                context['last_generated_tokens'] = draft_tokens
+                
+                logger.debug(f"Generated {len(draft_tokens)} draft tokens incrementally: {draft_tokens}")
+                logger.debug(f"Updated context with new KV cache for next iteration")
+                return draft_tokens, logits_tensor
+                
+        except Exception as e:
+            logger.error(f"Error in _generate_draft_tokens_incremental: {e}")
+            import traceback
+            traceback.print_exc()
+            # Fallback to legacy method
+            logger.warning("Falling back to legacy draft generation method")
+            return self._generate_draft_tokens(context, k)
+
+    def _advance_kv_cache(self, kv_cache, tokens: list, device) -> tuple:
+        """
+        Advance KV cache with new tokens using incremental generation
+        
+        Args:
+            kv_cache: Current KV cache (past_key_values)
+            tokens: List of new tokens to advance with
+            device: Device for tensor operations
+            
+        Returns:
+            Updated KV cache
+        """
+        try:
+            if not tokens:
+                return kv_cache
+            
+            current_kv = kv_cache
+            
+            with torch.no_grad():
+                for i, token in enumerate(tokens):
+                    # Prepare input for this step - each token as a single element
+                    current_input_ids = torch.tensor([[token]], device=device)
+                    
+                    step_inputs = {
+                        'input_ids': current_input_ids,
+                        'past_key_values': current_kv,
+                        'use_cache': True,
+                        'return_dict': True
+                    }
+                    
+                    # Advance KV cache one token at a time
+                    outputs = self.edge_model.model.thinker(**step_inputs)
+                    current_kv = outputs.past_key_values
+                    
+                    logger.debug(f"KV advance step {i+1}: token {token}")
+            
+            logger.info(f"Successfully advanced KV cache with {len(tokens)} tokens")
+            return current_kv
+            
+        except Exception as e:
+            logger.error(f"Error advancing KV cache: {e}")
+            import traceback
+            traceback.print_exc()
+            return kv_cache
+
+    def _update_context_incremental(self, context: dict, new_tokens: list) -> dict:
+        """
+        Update context with new tokens for incremental generation
+        
+        Args:
+            context: Current context with KV cache
+            new_tokens: List of new tokens to add
+            
+        Returns:
+            Updated context
+        """
+        try:
+            if not new_tokens:
+                return context
+            
+            # Update input_ids and attention_mask
+            new_tokens_tensor = torch.tensor([new_tokens], device=context['input_ids'].device)
+            context['input_ids'] = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
+            context['attention_mask'] = torch.cat([
+                context['attention_mask'], 
+                torch.ones_like(new_tokens_tensor)
+            ], dim=1)
+            
+            # Update last_token_id for next incremental generation
+            context['last_token_id'] = new_tokens_tensor[0, -1:].unsqueeze(0)
+            
+            # Note: KV cache management is handled separately in draft generation and correction logic
+            logger.debug(f"Updated context with {len(new_tokens)} new tokens")
+            
+            return context
+            
+        except Exception as e:
+            logger.error(f"Error in _update_context_incremental: {e}")
+            return context
+
     def _generate_draft_tokens(self, context: dict, k: int) -> tuple[list, torch.Tensor]:
         """
-        Generate k draft tokens using Edge model
+        Generate k draft tokens using Edge model (legacy method for compatibility)
         
         Args:
             context: Current context dictionary
@@ -424,7 +779,7 @@ class SimpleSpeculativeDecoding:
         """
         try:
             with torch.no_grad():
-                # Use Edge model to generate k tokens
+                # Use Edge model to generate k tokens with anti-repetition parameters
                 generation_kwargs = {
                     'input_ids': context['input_ids'],
                     'attention_mask': context['attention_mask'],
@@ -432,6 +787,10 @@ class SimpleSpeculativeDecoding:
                     'temperature': 0.7,
                     'top_p': 0.9,
                     'do_sample': True,
+                    'repetition_penalty': 1.15,  # Anti-repetition penalty
+                    'no_repeat_ngram_size': 3,   # Prevent 3-gram repetition
+                    'typical_p': 0.95,           # Typical sampling for better quality
+                    'min_new_tokens': 2,         # Minimum tokens to generate
                     'pad_token_id': self.edge_model.processor.tokenizer.eos_token_id,
                     'return_dict_in_generate': True,
                     'output_scores': True,
@@ -461,15 +820,13 @@ class SimpleSpeculativeDecoding:
                         logits = logits[0]  # Remove batch dimension: [k, vocab_size]
                         logger.debug(f"Extracted logits shape: {logits.shape}, expected: [{k}, vocab_size]")
                     else:
-                        # Fallback if no scores available
-                        vocab_size = self.edge_model.processor.tokenizer.vocab_size
-                        logits = torch.zeros(k, vocab_size, device=self.edge_model.device)
-                        logger.debug(f"Using fallback dummy logits shape: {logits.shape}")
+                        # No scores available in draft_scores - this is a serious issue
+                        logger.error(f"No scores available in outputs.scores[:k] - this indicates a model generation issue")
+                        raise ValueError("Model generation failed to return scores - cannot compute uncertainty")
                 else:
-                    # Fallback: create dummy logits
-                    vocab_size = self.edge_model.processor.tokenizer.vocab_size
-                    logits = torch.zeros(k, vocab_size, device=self.edge_model.device)
-                    logger.debug(f"Using dummy logits shape: {logits.shape}")
+                    # No scores at all - this is a serious issue
+                    logger.error(f"Model generation returned no scores (outputs.scores is None/empty) - this indicates a model configuration issue")
+                    raise ValueError("Model generation failed to return scores - cannot compute uncertainty")
                 
                 logger.debug(f"Generated {len(draft_tokens)} draft tokens: {draft_tokens}")
                 return draft_tokens, logits
@@ -482,7 +839,7 @@ class SimpleSpeculativeDecoding:
     
     def _calculate_entropy_uncertainty(self, logits: torch.Tensor) -> list[float]:
         """
-        Calculate entropy uncertainty for each token position
+        Calculate entropy uncertainty for each token position using stable computation
         
         Args:
             logits: Logits tensor of shape [k, vocab_size]
@@ -497,14 +854,34 @@ class SimpleSpeculativeDecoding:
             
             logger.debug(f"Input logits shape: {logits.shape}")
             
-            # Calculate probabilities
-            probs = torch.softmax(logits, dim=-1)
+            # Convert to float32 for better numerical stability
+            logits_f32 = logits.float()
+            
+            # Debug: check if logits are all zeros
+            if torch.all(logits_f32 == 0):
+                logger.warning("All logits are zero! This indicates a model issue.")
+                logger.debug(f"Logits stats: min={logits_f32.min()}, max={logits_f32.max()}, mean={logits_f32.mean()}")
+            
+            # Use log_softmax for numerical stability: log(p) = log_softmax(logits)
+            log_probs = torch.log_softmax(logits_f32, dim=-1)
+            probs = torch.exp(log_probs)  # Get probabilities from log probabilities
             
             # Calculate entropy: H = -sum(p * log(p))
-            # Add small epsilon to avoid log(0) which causes negative values
-            entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=-1)
+            # Since we have log(p), we can compute -sum(p * log(p)) more stably
+            entropy = -torch.sum(probs * log_probs, dim=-1)
+            
             # Clamp negative values to 0 (they indicate numerical issues)
             entropy = torch.clamp(entropy, min=0.0)
+            
+            # Debug: check entropy calculation
+            logger.debug(f"Logits stats: min={logits_f32.min()}, max={logits_f32.max()}, mean={logits_f32.mean()}")
+            logger.debug(f"Entropy stats: min={entropy.min()}, max={entropy.max()}, mean={entropy.mean()}")
+            
+            # Check for extremely high entropy values that might indicate issues
+            max_entropy = entropy.max().item()
+            if max_entropy > 10.0:  # Log entropy > 10 is suspicious
+                logger.warning(f"Extremely high entropy detected: {max_entropy:.2f}")
+                logger.warning("This might indicate numerical issues or model instability")
             
             # Convert to list
             entropy_list = entropy.cpu().tolist()

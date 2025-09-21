@@ -1,0 +1,159 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 2,
+    "total_samples": 2,
+    "speculative_decoding_config": {
+      "entropy_threshold": 2.0,
+      "prob_threshold": 0.15,
+      "k": 5
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.020517012190532743,
+    "avg_cider": 0.2543389278733566,
+    "latency_metrics": {
+      "ttft_mean": 1.6047896146774292,
+      "ttft_min": 0.3618142604827881,
+      "ttft_max": 2.8477649688720703,
+      "itps_mean": 13510.379649346352,
+      "itps_min": 2856.936965673521,
+      "itps_max": 24163.822333019183,
+      "otps_mean": 5.093195902913156,
+      "otps_min": 3.1744270025213575,
+      "otps_max": 7.011964803304955,
+      "oet_mean": 3.530158758163452,
+      "oet_min": 3.2801077365875244,
+      "oet_max": 3.78020977973938,
+      "total_time_mean": 3.6896893978118896,
+      "total_time_min": 3.3117856979370117,
+      "total_time_max": 4.067593097686768,
+      "cpu_percent_mean": 0.8050000000000002,
+      "cpu_percent_min": 0.7200000000000001,
+      "cpu_percent_max": 0.8900000000000001,
+      "ram_gb_mean": 7.072845458984375,
+      "ram_gb_min": 7.063133239746094,
+      "ram_gb_max": 7.082557678222656,
+      "gpu_util_mean": 66.0,
+      "gpu_util_min": 65.0,
+      "gpu_util_max": 67.0,
+      "gpu_memory_gb_mean": 34.318603515625,
+      "gpu_memory_gb_min": 34.317626953125,
+      "gpu_memory_gb_max": 34.319580078125,
+      "avg_input_tokens": 789.0,
+      "avg_output_tokens": 17.5,
+      "total_input_tokens": 1578,
+      "total_output_tokens": 35
+    },
+    "speculative_decoding_metrics": {
+      "total_time_mean": 3.6896893978118896,
+      "avg_cloud_calls": 5.5,
+      "avg_acceptance_rate": 0.6090909090909091,
+      "avg_correction_rate": 0.9444444444444444,
+      "avg_cloud_call_rate": 0.625,
+      "total_samples": 2
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音颤抖，情绪激动。\n问题",
+      "bleu_score": 0.026012784404037925,
+      "cider_score": 0.1924500897298753,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 2.8477649688720703,
+        "itps": 2856.936965673521,
+        "otps": 3.1744270025213575,
+        "oet": 3.78020977973938,
+        "total_time": 4.067593097686768,
+        "input_tokens": 820,
+        "output_tokens": 12,
+        "cpu_percent": 0.7200000000000001,
+        "ram_gb": 7.063133239746094,
+        "gpu_util": 65,
+        "gpu_memory_gb": 34.317626953125,
+        "cloud_calls": 2,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 12,
+        "total_corrections": 2,
+        "acceptance_rate": 0.8,
+        "correction_rate": 1.0,
+        "prefill_time": 2.267468214035034,
+        "cloud_call_rate": 0.5
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 4.067593097686768,
+        "output_tokens": 12,
+        "cloud_calls": 2,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 12,
+        "total_corrections": 2,
+        "acceptance_rate": 0.8,
+        "correction_rate": 1.0,
+        "cloud_call_rate": 0.5
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 2.0,
+        "prob_threshold": 0.15,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "这位男士的声音低沉，语气沉闷，带着些许，悲痛难抑语气。\nHuman",
+      "bleu_score": 0.015021239977027565,
+      "cider_score": 0.31622776601683794,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.3618142604827881,
+        "itps": 24163.822333019183,
+        "otps": 7.011964803304955,
+        "oet": 3.2801077365875244,
+        "total_time": 3.3117856979370117,
+        "input_tokens": 758,
+        "output_tokens": 23,
+        "cpu_percent": 0.8900000000000001,
+        "ram_gb": 7.082557678222656,
+        "gpu_util": 67,
+        "gpu_memory_gb": 34.319580078125,
+        "cloud_calls": 9,
+        "total_draft_tokens": 55,
+        "total_accepted_tokens": 23,
+        "total_corrections": 8,
+        "acceptance_rate": 0.41818181818181815,
+        "correction_rate": 0.8888888888888888,
+        "prefill_time": 0.08709287643432617,
+        "cloud_call_rate": 0.75
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 3.3117856979370117,
+        "output_tokens": 23,
+        "cloud_calls": 9,
+        "total_draft_tokens": 55,
+        "total_accepted_tokens": 23,
+        "total_corrections": 8,
+        "acceptance_rate": 0.41818181818181815,
+        "correction_rate": 0.8888888888888888,
+        "cloud_call_rate": 0.75
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 2.0,
+        "prob_threshold": 0.15,
+        "k": 5
+      }
+    }
+  ]
+}
