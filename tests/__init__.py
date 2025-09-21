@@ -1,3 +1,3 @@
 """
-Unit tests for edge-cloud speculative decoding
+Unit tests for edge-cloud models
 """

@@ -18,7 +18,6 @@ from tqdm import tqdm
 
 from src.models.edge_model import EdgeModel
 from src.models.cloud_model import CloudModel
-from src.models.speculative_decoder import SpeculativeDecoder
 from src.data.audio_processor import AudioProcessor
 from src.evaluation.metrics import EvaluationMetrics
 from src.utils.config import load_config
@@ -50,7 +49,6 @@ def run_full_baseline_experiment(config_path: str = "configs/default.yaml",
     audio_processor = AudioProcessor(**config['audio'])
     edge_model = EdgeModel(**config['models']['edge'])
     cloud_model = CloudModel(**config['models']['cloud'])
-    decoder = SpeculativeDecoder(edge_model, cloud_model, config)
     metrics = EvaluationMetrics()
     
     # Load data
@@ -66,7 +64,6 @@ def run_full_baseline_experiment(config_path: str = "configs/default.yaml",
     results = {
         'edge_only': [],
         'cloud_only': [],
-        'speculative': []
     }
     
     # Progress tracking
@@ -109,19 +106,6 @@ def run_full_baseline_experiment(config_path: str = "configs/default.yaml",
                 'dataset': sample['dataset']
             })
             
-            # Speculative decoding
-            start_time = time.time()
-            spec_tokens = decoder.decode(audio_features)
-            spec_latency = time.time() - start_time
-            spec_text = edge_model.tokenizer.decode(spec_tokens)
-            
-            results['speculative'].append({
-                'file_id': sample['file_id'],
-                'prediction': spec_text,
-                'reference': sample['caption'],
-                'latency': spec_latency,
-                'dataset': sample['dataset']
-            })
             
             successful_samples += 1
             

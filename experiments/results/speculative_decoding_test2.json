@@ -1,0 +1,463 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 10,
+    "total_samples": 10,
+    "speculative_decoding_config": {
+      "entropy_threshold": 1.45,
+      "prob_threshold": 0.24,
+      "k": 5
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.020955326667409187,
+    "avg_cider": 0.2387228393160516,
+    "latency_metrics": {
+      "ttft_mean": 0.0,
+      "ttft_min": 0.0,
+      "ttft_max": 0.0,
+      "itps_mean": 0.0,
+      "itps_min": 0.0,
+      "itps_max": 0.0,
+      "otps_mean": 12.754458555116031,
+      "otps_min": 4.456675366409744,
+      "otps_max": 21.811888437728815,
+      "oet_mean": 1.501682949066162,
+      "oet_min": 0.15308618545532227,
+      "oet_max": 7.404622793197632,
+      "total_time_mean": 1.501682949066162,
+      "total_time_min": 0.15308618545532227,
+      "total_time_max": 7.404622793197632,
+      "cpu_percent_mean": 0.0,
+      "cpu_percent_min": 0.0,
+      "cpu_percent_max": 0.0,
+      "ram_gb_mean": 0.0,
+      "ram_gb_min": 0.0,
+      "ram_gb_max": 0.0,
+      "gpu_util_mean": 0.0,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 0.0,
+      "gpu_memory_gb_mean": 0.0,
+      "gpu_memory_gb_min": 0.0,
+      "gpu_memory_gb_max": 0.0,
+      "avg_input_tokens": 0.0,
+      "avg_output_tokens": 12.3,
+      "total_input_tokens": 0,
+      "total_output_tokens": 123
+    },
+    "speculative_decoding_metrics": {
+      "total_time_mean": 1.501682949066162,
+      "avg_cloud_calls": 0.8,
+      "avg_acceptance_rate": 0.902969696969697,
+      "avg_correction_rate": 0.2833333333333333,
+      "avg_cloud_call_rate": 0.11287878787878787,
+      "total_samples": 10
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音低沉，停顿明显。",
+      "bleu_score": 0.03285702044797773,
+      "cider_score": 0.21081851067789195,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 8.513551331421517,
+        "oet": 1.292057752609253,
+        "total_time": 1.292057752609253,
+        "input_tokens": 0,
+        "output_tokens": 11,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 1.292057752609253,
+        "output_tokens": 11,
+        "cloud_calls": 0,
+        "total_draft_tokens": 11,
+        "total_accepted_tokens": 11,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "悲伤,声音低沉。",
+      "bleu_score": 0.023914346158980814,
+      "cider_score": 0.25,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 6.871653243284486,
+        "oet": 1.0186777114868164,
+        "total_time": 1.0186777114868164,
+        "input_tokens": 0,
+        "output_tokens": 7,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 1.0186777114868164,
+        "output_tokens": 7,
+        "cloud_calls": 1,
+        "total_draft_tokens": 11,
+        "total_accepted_tokens": 7,
+        "total_corrections": 1,
+        "acceptance_rate": 0.6363636363636364,
+        "correction_rate": 1.0,
+        "cloud_call_rate": 0.3333333333333333
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000148",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，又无能为力",
+      "generated_text": "悲伤，语速放慢，声音低沉，停顿明显。",
+      "bleu_score": 0.01284618972676772,
+      "cider_score": 0.25819888974716115,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 16.34945299909493,
+        "oet": 0.978626012802124,
+        "total_time": 0.978626012802124,
+        "input_tokens": 0,
+        "output_tokens": 16,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 0.978626012802124,
+        "output_tokens": 16,
+        "cloud_calls": 0,
+        "total_draft_tokens": 16,
+        "total_accepted_tokens": 16,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000209",
+      "dataset": "secap",
+      "reference_caption": "内心对他人感到抱歉，责怪自己",
+      "generated_text": "愤怒，语速加快，声音低沉。",
+      "bleu_score": 0.014386773665469615,
+      "cider_score": 0.13801311186847084,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 7.699443418682923,
+        "oet": 1.4286746978759766,
+        "total_time": 1.4286746978759766,
+        "input_tokens": 0,
+        "output_tokens": 11,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 1.4286746978759766,
+        "output_tokens": 11,
+        "cloud_calls": 1,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 11,
+        "total_corrections": 1,
+        "acceptance_rate": 0.7333333333333333,
+        "correction_rate": 1.0,
+        "cloud_call_rate": 0.25
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000220",
+      "dataset": "secap",
+      "reference_caption": "悲痛到无法自拔",
+      "generated_text": "悲伤, 语速放慢, 声音低沉",
+      "bleu_score": 0.01428363257865929,
+      "cider_score": 0.0890870806374748,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 13.982977164792922,
+        "oet": 1.072732925415039,
+        "total_time": 1.072732925415039,
+        "input_tokens": 0,
+        "output_tokens": 15,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 1.072732925415039,
+        "output_tokens": 15,
+        "cloud_calls": 0,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 15,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000274",
+      "dataset": "secap",
+      "reference_caption": "伤心不已，悲伤凄凉",
+      "generated_text": "悲伤，声音低沉。",
+      "bleu_score": 0.057367534172156044,
+      "cider_score": 0.42640143271122083,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 11.25733794258476,
+        "oet": 0.6218166351318359,
+        "total_time": 0.6218166351318359,
+        "input_tokens": 0,
+        "output_tokens": 7,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 0.6218166351318359,
+        "output_tokens": 7,
+        "cloud_calls": 0,
+        "total_draft_tokens": 7,
+        "total_accepted_tokens": 7,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000323",
+      "dataset": "secap",
+      "reference_caption": "心里无比疼痛，伤心",
+      "generated_text": "悲伤，声音低沉，声音颤抖。",
+      "bleu_score": 0.018476860420522198,
+      "cider_score": 0.2075143391598224,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 21.811888437728815,
+        "oet": 0.458465576171875,
+        "total_time": 0.458465576171875,
+        "input_tokens": 0,
+        "output_tokens": 10,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 0.458465576171875,
+        "output_tokens": 10,
+        "cloud_calls": 0,
+        "total_draft_tokens": 10,
+        "total_accepted_tokens": 10,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000340",
+      "dataset": "secap",
+      "reference_caption": "心里委屈，烦恼，窝火",
+      "generated_text": "悲伤，语调下降，声音颤抖。",
+      "bleu_score": 0.018476860420522198,
+      "cider_score": 0.29814239699997197,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 17.00480146083118,
+        "oet": 0.5880692005157471,
+        "total_time": 0.5880692005157471,
+        "input_tokens": 0,
+        "output_tokens": 10,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 0.5880692005157471,
+        "output_tokens": 10,
+        "cloud_calls": 0,
+        "total_draft_tokens": 10,
+        "total_accepted_tokens": 10,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000467",
+      "dataset": "secap",
+      "reference_caption": "透漏出的是无法掩饰的悲伤",
+      "generated_text": "悲伤。",
+      "bleu_score": 0.011962893615061086,
+      "cider_score": 0.3086066999241839,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 19.59680418632902,
+        "oet": 0.15308618545532227,
+        "total_time": 0.15308618545532227,
+        "input_tokens": 0,
+        "output_tokens": 3,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 0.15308618545532227,
+        "output_tokens": 3,
+        "cloud_calls": 0,
+        "total_draft_tokens": 3,
+        "total_accepted_tokens": 3,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    },
+    {
+      "file_id": "tx_emotion_00202000047",
+      "dataset": "secap",
+      "reference_caption": "心情平静，不心急，不急躁。",
+      "generated_text": "很抱歉，您没有提供音频内容，我无法根据您提供的信息判断情感。如果您能提供音频内容，我将很乐意帮助您分析。",
+      "bleu_score": 0.0049811554679751145,
+      "cider_score": 0.20044593143431833,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 4.456675366409744,
+        "oet": 7.404622793197632,
+        "total_time": 7.404622793197632,
+        "input_tokens": 0,
+        "output_tokens": 33,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 7.404622793197632,
+        "output_tokens": 33,
+        "cloud_calls": 6,
+        "total_draft_tokens": 50,
+        "total_accepted_tokens": 33,
+        "total_corrections": 5,
+        "acceptance_rate": 0.66,
+        "correction_rate": 0.8333333333333334,
+        "cloud_call_rate": 0.5454545454545454
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 1.45,
+        "prob_threshold": 0.24,
+        "k": 5
+      }
+    }
+  ]
+}

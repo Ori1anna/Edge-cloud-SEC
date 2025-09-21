@@ -1,3 +1,3 @@
 """
-Model implementations for edge-cloud speculative decoding
+Model implementations for edge-cloud models
 """

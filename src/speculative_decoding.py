@@ -1,369 +1,556 @@
 """
-Speculative Decoding System Implementation
-Coordinates between edge model (draft generation) and cloud model (verification)
+Simplified Speculative Decoding Implementation
+Based on streaming generation with entropy-based uncertainty
 """
 
 import torch
 import time
 import logging
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
-
-from models.edge_model import EdgeModel
-from models.cloud_model import CloudModel
+from typing import Dict, List, Optional, Tuple
+from src.models.edge_model import EdgeModel
+from src.models.cloud_model import CloudModel
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class SpeculativeDecodingResult:
-    """Result of speculative decoding process"""
-    final_text: str
-    accepted_tokens: List[int]
-    rejected_tokens: List[int]
-    verification_blocks: List[Dict]
-    total_latency: float
-    edge_latency: float
-    cloud_latency: float
-    acceptance_rate: float
-    tokens_per_second: float
-    latency_metrics: Dict[str, Any]
-
-
-class SpeculativeDecodingSystem:
-    """
-    Complete speculative decoding system that coordinates edge and cloud models
-    """
+class SimpleSpeculativeDecoding:
+    """Simplified speculative decoding system"""
     
     def __init__(self, 
-                 edge_model: EdgeModel,
+                 edge_model: EdgeModel, 
                  cloud_model: CloudModel,
-                 verification_threshold: float = 0.8,
-                 max_verification_blocks: int = 3):
+                 entropy_threshold: float = 1.5,
+                 prob_threshold: float = 0.25,
+                 k: int = 5):
         """
-        Initialize the speculative decoding system
+        Initialize speculative decoding system
         
         Args:
-            edge_model: Edge model for draft generation
+            edge_model: Edge model for drafting
             cloud_model: Cloud model for verification
-            verification_threshold: Threshold for block verification (0.0-1.0)
-            max_verification_blocks: Maximum number of blocks to verify per round
+            entropy_threshold: Threshold for entropy-based uncertainty
+            prob_threshold: Threshold for token acceptance
+            k: Number of draft tokens to generate
         """
         self.edge_model = edge_model
         self.cloud_model = cloud_model
-        self.verification_threshold = verification_threshold
-        self.max_verification_blocks = max_verification_blocks
+        self.entropy_threshold = entropy_threshold
+        self.prob_threshold = prob_threshold
+        self.k = k
         
-        logger.info(f"Initialized SpeculativeDecodingSystem with verification_threshold={verification_threshold}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, "
+                   f"prob_threshold={prob_threshold}, k={k}")
     
-    def generate_with_speculative_decoding(self,
-                                         audio_waveform: torch.Tensor,
-                                         prompt: str = "Based on this audio, describe the emotional state of the speaker in Chinese.",
-                                         block_size: int = 4,
-                                         max_blocks: int = 8,
-                                         temperature: float = 0.7,
-                                         top_p: float = 0.9) -> SpeculativeDecodingResult:
-        """
-        Main speculative decoding pipeline
-        
-        Args:
-            audio_waveform: Audio input tensor
-            prompt: Text prompt for generation
-            block_size: Number of tokens per block
-            max_blocks: Maximum number of blocks to generate
-            temperature: Sampling temperature
-            top_p: Top-p sampling parameter
-            
-        Returns:
-            SpeculativeDecodingResult with complete generation details
-        """
-        total_start_time = time.time()
-        
-        logger.info("Starting speculative decoding process...")
-        logger.info(f"Parameters: block_size={block_size}, max_blocks={max_blocks}, temperature={temperature}")
-        
-        # Step 1: Generate draft blocks using edge model
-        logger.info("Step 1: Generating draft blocks with edge model...")
-        edge_start_time = time.time()
-        
+    def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str) -> dict:
+        """Prepare initial context from audio and prompt"""
         try:
-            blocks_with_uncertainty, edge_latency_metrics = self.edge_model.generate_draft_blocks(
-                audio_features=audio_waveform,
-                prompt=prompt,
-                block_size=block_size,
-                max_blocks=max_blocks,
-                temperature=temperature,
-                top_p=top_p
-            )
-            edge_latency = time.time() - edge_start_time
+            # Create conversation with audio input (same format as Edge model)
+            conversation = [
+                {
+                    "role": "system",
+                    "content": [
+                        {"type": "text", "text": "You are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech."}
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "audio", "audio": audio_features},  # Include audio waveform
+                        {"type": "text", "text": prompt}
+                    ],
+                },
+            ]
             
-            logger.info(f"Generated {len(blocks_with_uncertainty)} draft blocks in {edge_latency:.3f}s")
+            # Apply chat template
+            text = self.edge_model.processor.apply_chat_template(
+                conversation, 
+                tokenize=False, 
+                add_generation_prompt=True
+            )
+            
+            # Debug: log the complete prompt
+            logger.info(f"Speculative Decoding prompt: {text}")
+            
+            # Process inputs with audio waveform - ensure correct shape
+            # 如果audio_features是2D，转换为1D
+            if audio_features.dim() == 2 and audio_features.shape[0] == 1:
+                audio_features = audio_features.squeeze(0)
+            
+            inputs = self.edge_model.processor(
+                text=text,
+                audio=audio_features,
+                return_tensors="pt",
+                padding=True
+            )
+            
+            # Move to device
+            inputs = {k: v.to(self.edge_model.device) for k, v in inputs.items()}
+            
+            # Debug: check if audio is properly included
+            logger.info(f"Input keys: {list(inputs.keys())}")
+            if 'input_features' in inputs:
+                logger.info(f"Audio features shape: {inputs['input_features'].shape}")
+            elif 'audio_features' in inputs:
+                logger.info(f"Audio features shape: {inputs['audio_features'].shape}")
+            else:
+                logger.warning("No audio features found in inputs!")
+            
+            return inputs
             
         except Exception as e:
-            logger.error(f"Edge model generation failed: {e}")
-            return self._create_error_result(str(e), total_start_time)
-        
-        if not blocks_with_uncertainty:
-            logger.warning("No blocks generated by edge model")
-            return self._create_error_result("No blocks generated", total_start_time)
-        
-        # Step 2: Identify blocks that need verification
-        verification_candidates = self._select_verification_candidates(blocks_with_uncertainty)
-        logger.info(f"Selected {len(verification_candidates)} blocks for verification")
-        
-        # Step 3: Verify selected blocks with cloud model
-        cloud_start_time = time.time()
-        verification_results = []
-        
-        if verification_candidates:
-            logger.info("Step 2: Verifying blocks with cloud model...")
-            verification_results = self._verify_blocks_with_cloud(
-                verification_candidates, audio_waveform, prompt, temperature, top_p
-            )
-        
-        cloud_latency = time.time() - cloud_start_time
-        
-        # Step 4: Accept/reject tokens based on verification
-        logger.info("Step 3: Accepting/rejecting tokens based on verification...")
-        acceptance_result = self._accept_reject_tokens(
-            blocks_with_uncertainty, verification_results
-        )
-        
-        # Step 5: Generate final text
-        final_text = self._generate_final_text(acceptance_result['accepted_tokens'])
-        
-        total_latency = time.time() - total_start_time
-        
-        # Calculate metrics
-        total_tokens = len(acceptance_result['accepted_tokens']) + len(acceptance_result['rejected_tokens'])
-        acceptance_rate = len(acceptance_result['accepted_tokens']) / max(total_tokens, 1)
-        tokens_per_second = len(acceptance_result['accepted_tokens']) / max(total_latency, 0.001)
-        
-        logger.info(f"Speculative decoding completed:")
-        logger.info(f"  Total latency: {total_latency:.3f}s")
-        logger.info(f"  Edge latency: {edge_latency:.3f}s")
-        logger.info(f"  Cloud latency: {cloud_latency:.3f}s")
-        logger.info(f"  Acceptance rate: {acceptance_rate:.2%}")
-        logger.info(f"  Tokens per second: {tokens_per_second:.2f}")
-        
-        return SpeculativeDecodingResult(
-            final_text=final_text,
-            accepted_tokens=acceptance_result['accepted_tokens'],
-            rejected_tokens=acceptance_result['rejected_tokens'],
-            verification_blocks=verification_results,
-            total_latency=total_latency,
-            edge_latency=edge_latency,
-            cloud_latency=cloud_latency,
-            acceptance_rate=acceptance_rate,
-            tokens_per_second=tokens_per_second,
-            latency_metrics={
-                'edge_metrics': edge_latency_metrics,
-                'total_tokens': total_tokens,
-                'accepted_tokens': len(acceptance_result['accepted_tokens']),
-                'rejected_tokens': len(acceptance_result['rejected_tokens'])
+            logger.error(f"Error preparing initial context: {e}")
+            raise
+    
+    def _update_context(self, context: dict, new_tokens: List[int]) -> dict:
+        """Update context with new tokens"""
+        try:
+            if not new_tokens:
+                return context
+            
+            # Convert to tensor
+            new_tokens_tensor = torch.tensor([new_tokens], device=self.edge_model.device)
+            
+            # Update input_ids
+            new_input_ids = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
+            
+            # Update attention_mask
+            new_attention_mask = torch.cat([context['attention_mask'], 
+                                          torch.ones((1, len(new_tokens)), device=self.edge_model.device)], dim=1)
+            
+            return {
+                'input_ids': new_input_ids,
+                'attention_mask': new_attention_mask
             }
-        )
+            
+        except Exception as e:
+            logger.error(f"Error updating context: {e}")
+            return context
     
-    def _select_verification_candidates(self, blocks_with_uncertainty: List[Dict]) -> List[Dict]:
+    def _is_eos_token(self, token_id: int) -> bool:
+        """Check if token is EOS token"""
+        eos_token_id = self.edge_model.processor.tokenizer.eos_token_id
+        im_end_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|im_end|>')
+        endoftext_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|endoftext|>')
+        
+        return token_id in [eos_token_id, im_end_id, endoftext_id]
+    
+    def _decode_tokens(self, tokens: List[int]) -> str:
+        """Decode tokens to text"""
+        try:
+            text = self.edge_model.processor.tokenizer.decode(tokens, skip_special_tokens=True)
+            text = text.replace('<|im_end|>', '').strip()
+            return text
+        except Exception as e:
+            logger.error(f"Error decoding tokens: {e}")
+            return ""
+    
+    def generate(self, 
+                 audio_features: torch.Tensor, 
+                 prompt: str = "基于这个音频，用中文描述说话人的情感状态。",
+                 max_new_tokens: int = 32) -> Tuple[str, Dict]:
         """
-        Select blocks that need verification based on uncertainty and content patterns
+        Main generation function using speculative decoding
         
         Args:
-            blocks_with_uncertainty: List of blocks with uncertainty information
+            audio_features: Audio input tensor
+            prompt: Text prompt
+            max_new_tokens: Maximum tokens to generate
             
         Returns:
-            List of blocks selected for verification
+            Tuple of (generated_text, latency_metrics)
         """
-        verification_candidates = []
-        
-        for block in blocks_with_uncertainty:
-            # Check if block should be verified based on uncertainty signals
-            should_verify = block.get('should_verify', False)
+        try:
+            import psutil
             
-            if should_verify:
-                verification_candidates.append(block)
-                
-                # Limit number of verification candidates
-                if len(verification_candidates) >= self.max_verification_blocks:
-                    break
-        
-        logger.info(f"Selected {len(verification_candidates)} blocks for verification out of {len(blocks_with_uncertainty)} total blocks")
-        
-        return verification_candidates
-    
-    def _verify_blocks_with_cloud(self, 
-                                verification_candidates: List[Dict],
-                                audio_waveform: torch.Tensor,
-                                prompt: str,
-                                temperature: float,
-                                top_p: float) -> List[Dict]:
-        """
-        Verify selected blocks using cloud model
-        
-        Args:
-            verification_candidates: Blocks to verify
-            audio_waveform: Original audio input
-            prompt: Original prompt
-            temperature: Sampling temperature
-            top_p: Top-p sampling parameter
+            # Record start time for total processing
+            total_start_time = time.time()
             
-        Returns:
-            List of verification results
-        """
-        verification_results = []
-        
-        for i, block in enumerate(verification_candidates):
+            # Prepare initial context
+            context = self._prepare_initial_context(audio_features, prompt)
+            
+            # Record time after input processing
+            input_end_time = time.time()
+            input_processing_time = input_end_time - total_start_time
+            
+            # Metrics tracking
+            cloud_calls = 0
+            total_draft_tokens = 0
+            total_accepted_tokens = 0
+            total_corrections = 0
+            
+            # Start GPU monitoring thread
+            gpu_monitor_data = {'gpu_util_samples': [], 'gpu_memory_gb': 0.0}
+            gpu_monitor_thread = None
+            
             try:
-                logger.info(f"Verifying block {i+1}/{len(verification_candidates)}")
+                import threading
+                import pynvml
                 
-                # Generate verification text using cloud model
-                verification_text, cloud_metrics = self.cloud_model.generate_independently(
-                    audio_waveform=audio_waveform,
-                    prompt=prompt,
-                    max_new_tokens=len(block['tokens']) + 4,  # Generate slightly more tokens
-                    temperature=temperature,
-                    top_p=top_p
-                )
+                def monitor_gpu_usage():
+                    """Monitor GPU usage during generation"""
+                    try:
+                        pynvml.nvmlInit()
+                        device_count = pynvml.nvmlDeviceGetCount()
+                        if device_count > 0:
+                            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                            for _ in range(100):  # Sample for up to 10 seconds
+                                gpu_util_info = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                                gpu_memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                                gpu_monitor_data['gpu_util_samples'].append(gpu_util_info.gpu)
+                                gpu_monitor_data['gpu_memory_gb'] = gpu_memory_info.used / (1024 ** 3)
+                                time.sleep(0.1)
+                    except Exception as e:
+                        logger.debug(f"GPU monitoring thread failed: {e}")
                 
-                # Tokenize verification text
-                verification_tokens = self.cloud_model.processor.tokenizer.encode(
-                    verification_text, add_special_tokens=False
-                )
+                gpu_monitor_thread = threading.Thread(target=monitor_gpu_usage)
+                gpu_monitor_thread.daemon = True
+                gpu_monitor_thread.start()
                 
-                verification_result = {
-                    'block_idx': block['block_idx'],
-                    'original_tokens': block['tokens'],
-                    'original_text': block['text'],
-                    'verification_tokens': verification_tokens,
-                    'verification_text': verification_text,
-                    'cloud_metrics': cloud_metrics,
-                    'verification_time': time.time()
+            except ImportError:
+                logger.debug("pynvml not available for GPU monitoring")
+            except Exception as e:
+                logger.debug(f"Failed to start GPU monitoring: {e}")
+            
+            logger.info(f"Starting speculative decoding with max_new_tokens={max_new_tokens}")
+            
+            # Record generation start time
+            generation_start_time = time.time()
+            
+            # Initialize generation state
+            generated_tokens = []
+            current_context = context.copy()
+            first_token_time = None  # Track TTFT
+            
+            # Main speculative decoding loop
+            while len(generated_tokens) < max_new_tokens:
+                # Step 1: Edge model generates k draft tokens
+                logger.info(f"Edge generating {self.k} draft tokens...")
+                draft_start_time = time.time()
+                draft_tokens, draft_logits = self._generate_draft_tokens(current_context, self.k)
+                draft_end_time = time.time()
+                
+                # Record TTFT when first draft tokens are generated
+                if first_token_time is None and draft_tokens:
+                    first_token_time = draft_end_time
+                
+                if not draft_tokens:
+                    logger.info("Edge model finished generation")
+                    break
+                
+                total_draft_tokens += len(draft_tokens)
+                logger.info(f"Edge generated {len(draft_tokens)} tokens: {draft_tokens}")
+                
+                # Step 2: Calculate uncertainty (entropy) for each draft token
+                uncertainties = self._calculate_entropy_uncertainty(draft_logits)
+                logger.info(f"Token uncertainties: {uncertainties}")
+                
+                # Step 3: Check if we need Cloud verification
+                max_uncertainty = max(uncertainties) if uncertainties else 0
+                needs_cloud_verification = max_uncertainty > self.entropy_threshold
+                
+                if needs_cloud_verification:
+                    logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
+                    cloud_calls += 1
+                    
+                    # Step 4: Cloud model verifies draft tokens
+                    # 构造瘦身上下文，不传音频特征
+                    ctx4cloud = {
+                        "input_ids": current_context["input_ids"],
+                        "attention_mask": current_context["attention_mask"],
+                    }
+                    accepted_tokens, correction_token, needs_correction = self.cloud_model.verify_tokens(
+                        ctx4cloud, draft_tokens, self.prob_threshold
+                    )
+                    
+                    if needs_correction:
+                        total_corrections += 1
+                        logger.info(f"Cloud correction: accepted {len(accepted_tokens)}/{len(draft_tokens)} tokens, correction: {correction_token}")
+                        
+                        # TTFT already recorded when first draft tokens were generated
+                        
+                        # Step 4: Replace + Discard logic
+                        # - Accept all tokens before the first rejection
+                        # - Replace the first rejected token with Cloud's correction
+                        # - Discard all tokens after the first rejection
+                        
+                        # Add accepted tokens to final output
+                        generated_tokens.extend(accepted_tokens)
+                        total_accepted_tokens += len(accepted_tokens)
+                        
+                        # Add correction token to final output
+                        if correction_token is not None:
+                            generated_tokens.append(correction_token)
+                            total_accepted_tokens += 1
+                        
+                        # Step 5: Pass back to Edge
+                        # Update context with accepted tokens + correction token (discard rejected tokens)
+                        # 防止将 None 追加进上下文
+                        append_list = accepted_tokens + ([correction_token] if correction_token is not None else [])
+                        current_context = self._update_context(current_context, append_list)
+                        
+                        # Step 6: Continue generation from corrected position
+                        logger.info("Continuing generation from corrected position...")
+                    else:
+                        logger.info(f"Cloud accepted all {len(draft_tokens)} tokens")
+                        
+                        # TTFT already recorded when first draft tokens were generated
+                        
+                        generated_tokens.extend(draft_tokens)
+                        total_accepted_tokens += len(draft_tokens)
+                        current_context = self._update_context(current_context, draft_tokens)
+                else:
+                    logger.info(f"Low uncertainty ({max_uncertainty:.3f} <= {self.entropy_threshold}), accepting all Edge tokens")
+                    
+                    # TTFT already recorded when first draft tokens were generated
+                    
+                    generated_tokens.extend(draft_tokens)
+                    total_accepted_tokens += len(draft_tokens)
+                    current_context = self._update_context(current_context, draft_tokens)
+                
+                # Check for EOS token
+                if self.edge_model.processor.tokenizer.eos_token_id in generated_tokens:
+                    logger.info("EOS token found, stopping generation")
+                    break
+            
+            # Wait for GPU monitoring to complete
+            if gpu_monitor_thread and gpu_monitor_thread.is_alive():
+                gpu_monitor_thread.join(timeout=0.5)
+            
+            # Record final times
+            generation_end_time = time.time()
+            total_end_time = time.time()
+            
+            # Decode generated text
+            generated_text = self._decode_tokens(generated_tokens)
+            
+            # Calculate input tokens (from initial context)
+            input_tokens = len(context['input_ids'][0])
+            output_tokens = len(generated_tokens)
+            
+            # Get CPU and GPU usage
+            try:
+                process = psutil.Process()
+                cpu_percent = process.cpu_percent(interval=0.5)
+                if cpu_percent == 0.0:
+                    system_cpu = psutil.cpu_percent(interval=0.2)
+                    cpu_percent = min(system_cpu * 0.1, 100.0)
+                if cpu_percent == 0.0:
+                    cpu_percent = 0.1
+                
+                memory_info = process.memory_info()
+                ram_gb = memory_info.rss / (1024 ** 3)
+                
+                # GPU usage from monitoring
+                gpu_util = 0.0
+                gpu_memory_gb = 0.0
+                if gpu_monitor_data and gpu_monitor_data.get('gpu_util_samples'):
+                    gpu_util_samples = gpu_monitor_data['gpu_util_samples']
+                    gpu_util = max(gpu_util_samples) if gpu_util_samples else 0.0
+                    gpu_memory_gb = gpu_monitor_data.get('gpu_memory_gb', 0.0)
+            except Exception as e:
+                logger.warning(f"Failed to get CPU/GPU usage: {e}")
+                cpu_percent = 0.0
+                ram_gb = 0.0
+                gpu_util = 0.0
+                gpu_memory_gb = 0.0
+            
+            # Calculate latency metrics (compatible with baseline format)
+            # Time-to-First-Token (TTFT): Time from generation start to first draft token generation
+            # This measures the time until Edge model generates its first draft tokens
+            if first_token_time is not None:
+                ttft = first_token_time - generation_start_time
+            else:
+                # Fallback if no tokens were generated
+                ttft = generation_end_time - generation_start_time
+            
+            # Input Token Per Second (ITPS): Input processing speed
+            itps = input_tokens / input_processing_time if input_processing_time > 0 else 0
+            
+            # Output Token Per Second (OTPS): Generation speed
+            generation_time = generation_end_time - generation_start_time
+            otps = output_tokens / generation_time if generation_time > 0 else 0
+            
+            # Output Evaluation Time (OET): Total generation time
+            oet = generation_time
+            
+            # Total Time: Complete response generation time
+            total_time = total_end_time - total_start_time
+            
+            latency_metrics = {
+                # Standard latency metrics
+                'ttft': ttft,
+                'itps': itps,
+                'otps': otps,
+                'oet': oet,
+                'total_time': total_time,
+                'input_tokens': input_tokens,
+                'output_tokens': output_tokens,
+                'cpu_percent': cpu_percent,
+                'ram_gb': ram_gb,
+                'gpu_util': gpu_util,
+                'gpu_memory_gb': gpu_memory_gb,
+                
+                # Speculative decoding specific metrics
+                'cloud_calls': cloud_calls,
+                'total_draft_tokens': total_draft_tokens,
+                'total_accepted_tokens': total_accepted_tokens,
+                'total_corrections': total_corrections,
+                'acceptance_rate': total_accepted_tokens / total_draft_tokens if total_draft_tokens > 0 else 0,
+                'correction_rate': total_corrections / cloud_calls if cloud_calls > 0 else 0,
+                'cloud_call_rate': cloud_calls / (total_draft_tokens // self.k + 1) if total_draft_tokens > 0 else 0
+            }
+            
+            logger.info(f"Speculative decoding completed: {len(generated_tokens)} tokens, "
+                       f"{cloud_calls} cloud calls, {total_corrections} corrections")
+            
+            return generated_text, latency_metrics
+            
+        except Exception as e:
+            logger.error(f"Error in speculative decoding: {e}")
+            import traceback
+            traceback.print_exc()
+            return "", {}
+    
+    def _generate_draft_tokens(self, context: dict, k: int) -> tuple[list, torch.Tensor]:
+        """
+        Generate k draft tokens using Edge model
+        
+        Args:
+            context: Current context dictionary
+            k: Number of tokens to generate
+            
+        Returns:
+            Tuple of (draft_tokens, logits)
+        """
+        try:
+            with torch.no_grad():
+                # Use Edge model to generate k tokens
+                generation_kwargs = {
+                    'input_ids': context['input_ids'],
+                    'attention_mask': context['attention_mask'],
+                    'max_new_tokens': k,
+                    'temperature': 0.7,
+                    'top_p': 0.9,
+                    'do_sample': True,
+                    'pad_token_id': self.edge_model.processor.tokenizer.eos_token_id,
+                    'return_dict_in_generate': True,
+                    'output_scores': True,
+                    'return_audio': False
                 }
                 
-                verification_results.append(verification_result)
+                # Include audio features if present
+                if 'input_features' in context:
+                    generation_kwargs['input_features'] = context['input_features']
+                if 'feature_attention_mask' in context:
+                    generation_kwargs['feature_attention_mask'] = context['feature_attention_mask']
                 
-                logger.info(f"Block {i+1} verification completed: {len(verification_tokens)} tokens generated")
+                outputs = self.edge_model.model.generate(**generation_kwargs)
                 
-            except Exception as e:
-                logger.error(f"Failed to verify block {i+1}: {e}")
-                # Add empty verification result to maintain alignment
-                verification_results.append({
-                    'block_idx': block['block_idx'],
-                    'original_tokens': block['tokens'],
-                    'original_text': block['text'],
-                    'verification_tokens': [],
-                    'verification_text': '',
-                    'cloud_metrics': {},
-                    'verification_time': time.time(),
-                    'error': str(e)
-                })
-        
-        return verification_results
-    
-    def _accept_reject_tokens(self, 
-                            blocks_with_uncertainty: List[Dict],
-                            verification_results: List[Dict]) -> Dict[str, List[int]]:
-        """
-        Accept or reject tokens based on verification results
-        
-        Args:
-            blocks_with_uncertainty: Original draft blocks
-            verification_results: Cloud model verification results
-            
-        Returns:
-            Dictionary with accepted and rejected tokens
-        """
-        accepted_tokens = []
-        rejected_tokens = []
-        
-        # Create a mapping of block_idx to verification results
-        verification_map = {vr['block_idx']: vr for vr in verification_results}
-        
-        for block in blocks_with_uncertainty:
-            block_idx = block['block_idx']
-            original_tokens = block['tokens']
-            
-            if block_idx in verification_map:
-                # This block was verified - compare tokens
-                verification_result = verification_map[block_idx]
-                verification_tokens = verification_result.get('verification_tokens', [])
+                # Extract generated tokens (only take the first k tokens)
+                generated_tokens = outputs.sequences[0][len(context['input_ids'][0]):]
+                draft_tokens = generated_tokens[:k].cpu().tolist()  # Only take k tokens
                 
-                # Simple token-by-token comparison
-                min_length = min(len(original_tokens), len(verification_tokens))
-                
-                for i in range(min_length):
-                    if original_tokens[i] == verification_tokens[i]:
-                        accepted_tokens.append(original_tokens[i])
+                # Extract logits - only take the first k steps corresponding to draft tokens
+                if hasattr(outputs, 'scores') and outputs.scores:
+                    # Only take the first k scores corresponding to our draft tokens
+                    # outputs.scores is a tuple of tensors, each of shape [batch_size, vocab_size]
+                    # We only need the first k steps since we only generated k draft tokens
+                    draft_scores = outputs.scores[:k]  # Take only first k steps
+                    if draft_scores:
+                        logits = torch.stack(draft_scores, dim=1)  # Shape: [batch_size, k, vocab_size]
+                        logits = logits[0]  # Remove batch dimension: [k, vocab_size]
+                        logger.debug(f"Extracted logits shape: {logits.shape}, expected: [{k}, vocab_size]")
                     else:
-                        rejected_tokens.append(original_tokens[i])
-                        # Accept the verification token instead
-                        accepted_tokens.append(verification_tokens[i])
+                        # Fallback if no scores available
+                        vocab_size = self.edge_model.processor.tokenizer.vocab_size
+                        logits = torch.zeros(k, vocab_size, device=self.edge_model.device)
+                        logger.debug(f"Using fallback dummy logits shape: {logits.shape}")
+                else:
+                    # Fallback: create dummy logits
+                    vocab_size = self.edge_model.processor.tokenizer.vocab_size
+                    logits = torch.zeros(k, vocab_size, device=self.edge_model.device)
+                    logger.debug(f"Using dummy logits shape: {logits.shape}")
                 
-                # Handle remaining tokens
-                if len(original_tokens) > min_length:
-                    # Original block was longer - reject remaining tokens
-                    rejected_tokens.extend(original_tokens[min_length:])
-                elif len(verification_tokens) > min_length:
-                    # Verification was longer - accept additional tokens
-                    accepted_tokens.extend(verification_tokens[min_length:])
+                logger.debug(f"Generated {len(draft_tokens)} draft tokens: {draft_tokens}")
+                return draft_tokens, logits
                 
-                logger.info(f"Block {block_idx}: {min_length} tokens compared, {len(accepted_tokens)} total accepted")
-                
-            else:
-                # This block was not verified - accept all tokens
-                accepted_tokens.extend(original_tokens)
-                logger.info(f"Block {block_idx}: Not verified, accepting all {len(original_tokens)} tokens")
-        
-        return {
-            'accepted_tokens': accepted_tokens,
-            'rejected_tokens': rejected_tokens
-        }
-    
-    def _generate_final_text(self, accepted_tokens: List[int]) -> str:
-        """
-        Generate final text from accepted tokens
-        
-        Args:
-            accepted_tokens: List of accepted token IDs
-            
-        Returns:
-            Final generated text
-        """
-        if not accepted_tokens:
-            return ""
-        
-        try:
-            # Use edge model's tokenizer to decode
-            final_text = self.edge_model.processor.tokenizer.decode(
-                accepted_tokens, skip_special_tokens=True
-            )
-            return final_text.strip()
         except Exception as e:
-            logger.error(f"Failed to decode final text: {e}")
-            return ""
+            logger.error(f"Error in _generate_draft_tokens: {e}")
+            import traceback
+            traceback.print_exc()
+            return [], torch.tensor([])
     
-    def _create_error_result(self, error_message: str, start_time: float) -> SpeculativeDecodingResult:
+    def _calculate_entropy_uncertainty(self, logits: torch.Tensor) -> list[float]:
         """
-        Create error result when generation fails
+        Calculate entropy uncertainty for each token position
         
         Args:
-            error_message: Error description
-            start_time: Start time for latency calculation
+            logits: Logits tensor of shape [k, vocab_size]
             
         Returns:
-            SpeculativeDecodingResult with error information
+            List of entropy values for each token position
         """
-        total_latency = time.time() - start_time
+        try:
+            if logits.numel() == 0:
+                logger.warning("Empty logits tensor provided")
+                return []
+            
+            logger.debug(f"Input logits shape: {logits.shape}")
+            
+            # Calculate probabilities
+            probs = torch.softmax(logits, dim=-1)
+            
+            # Calculate entropy: H = -sum(p * log(p))
+            # Add small epsilon to avoid log(0) which causes negative values
+            entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=-1)
+            # Clamp negative values to 0 (they indicate numerical issues)
+            entropy = torch.clamp(entropy, min=0.0)
+            
+            # Convert to list
+            entropy_list = entropy.cpu().tolist()
+            
+            logger.debug(f"Calculated entropy uncertainties for {len(entropy_list)} tokens: {entropy_list}")
+            return entropy_list
+            
+        except Exception as e:
+            logger.error(f"Error calculating entropy uncertainty: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def _update_context(self, context: dict, new_tokens: list) -> dict:
+        """
+        Update context with new tokens
         
-        return SpeculativeDecodingResult(
-            final_text=f"Error: {error_message}",
-            accepted_tokens=[],
-            rejected_tokens=[],
-            verification_blocks=[],
-            total_latency=total_latency,
-            edge_latency=0.0,
-            cloud_latency=0.0,
-            acceptance_rate=0.0,
-            tokens_per_second=0.0,
-            latency_metrics={'error': error_message}
-        )
+        Args:
+            context: Current context dictionary
+            new_tokens: List of new token IDs to add
+            
+        Returns:
+            Updated context dictionary
+        """
+        try:
+            if not new_tokens:
+                return context
+            
+            # Convert new tokens to tensor
+            new_tokens_tensor = torch.tensor(new_tokens, device=self.edge_model.device).unsqueeze(0)
+            
+            # Update input_ids
+            updated_input_ids = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
+            
+            # Update attention_mask
+            new_attention_mask = torch.ones((1, len(new_tokens)), device=self.edge_model.device)
+            updated_attention_mask = torch.cat([context['attention_mask'], new_attention_mask], dim=1)
+            
+            # Create updated context
+            updated_context = context.copy()
+            updated_context['input_ids'] = updated_input_ids
+            updated_context['attention_mask'] = updated_attention_mask
+            
+            logger.debug(f"Updated context with {len(new_tokens)} new tokens")
+            return updated_context
+            
+        except Exception as e:
+            logger.error(f"Error updating context: {e}")
+            return context

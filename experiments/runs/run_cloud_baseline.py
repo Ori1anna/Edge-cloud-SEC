@@ -82,6 +82,12 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 【你的唯一任务】
 - 从音频中提取可听到的情绪与相关声学线索，按上述格式输出一条中文描述。
 - 只输出这“一行描述”，除此之外不要输出任何其他文字。"""
+#             return """根据音频，仅输出一条中文情感描述。
+# 要求：只一行，句号结尾；不提问、不对话、不解释；不用引号、英文或数字。
+# 内容只含“情感词 + 声学线索”（1–3 个情感 + 至少 1 条线索），用逗号或顿号连接。
+# 情感词可用：悲伤、愤怒、开心、平静、焦虑、担忧、害怕、失望、嫉妒、冷淡、厌倦、轻蔑、真诚、自信、激动等；
+# 声学线索可用：语调上扬、语调下降、语速加快、语速放慢、声音洪亮、声音低沉、声音颤抖、停顿明显、带哭腔、含笑、有气无力、铿锵有力、低声、压抑等。
+# 即使线索较弱，也写出最可能的情感并附一条声学线索。"""
 
     elif language == "english":
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"

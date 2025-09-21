@@ -1,0 +1,94 @@
+{
+  "description": "Speculative Decoding Batch Experiment Configuration - Parameter Optimization",
+  "experiments": [
+    {
+      "name": "optimized_best",
+      "description": "Best parameters from optimization (threshold=1.2, k=7)",
+      "parameters": {
+        "uncertainty_threshold": 1.2,
+        "k": 7,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "high_threshold",
+      "description": "High uncertainty threshold (more Edge usage)",
+      "parameters": {
+        "uncertainty_threshold": 1.5,
+        "k": 5,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "low_threshold",
+      "description": "Low uncertainty threshold (more Cloud usage)",
+      "parameters": {
+        "uncertainty_threshold": 0.8,
+        "k": 3,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "large_k",
+      "description": "Large block size (k=10)",
+      "parameters": {
+        "uncertainty_threshold": 1.2,
+        "k": 10,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "small_k",
+      "description": "Small block size (k=3)",
+      "parameters": {
+        "uncertainty_threshold": 1.2,
+        "k": 3,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "high_temp",
+      "description": "High temperature (more randomness)",
+      "parameters": {
+        "uncertainty_threshold": 1.2,
+        "k": 7,
+        "temperature": 1.0,
+        "top_p": 0.9,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "low_temp",
+      "description": "Low temperature (more deterministic)",
+      "parameters": {
+        "uncertainty_threshold": 1.2,
+        "k": 7,
+        "temperature": 0.3,
+        "top_p": 0.5,
+        "repetition_penalty": 1.05
+      }
+    },
+    {
+      "name": "balanced",
+      "description": "Balanced parameters (threshold=1.0, k=5)",
+      "parameters": {
+        "uncertainty_threshold": 1.0,
+        "k": 5,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "repetition_penalty": 1.05
+      }
+    }
+  ]
+}
+

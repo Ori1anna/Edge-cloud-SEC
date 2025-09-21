@@ -152,57 +152,88 @@ class CloudModel:
             except Exception as e:
                 logger.debug(f"Failed to start GPU monitoring: {e}")
             
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=max_new_tokens,
-                    temperature=temperature,
-                    top_p=top_p,
-                    do_sample=True,
-                    pad_token_id=self.processor.tokenizer.eos_token_id,
-                    return_dict_in_generate=False,  # 减少内存开销
-                    output_scores=False,  # 不返回scores以节省内存
-                    return_audio=False
+            # Try streaming generation first for accurate TTFT
+            try:
+                from .streaming_generator import StreamingGenerator
+                
+                # Create streaming generator
+                streamer = StreamingGenerator(self.model, self.processor, self.device)
+                
+                # Generate with streaming for accurate TTFT
+                generated_text, streaming_metrics = streamer.generate_with_accurate_metrics(
+                    inputs, max_new_tokens, temperature, top_p
                 )
-            
-            # Record time after generation
-            generation_end_time = time.time()
-            
-            # Wait for GPU monitoring to complete (max 0.5 seconds)
-            if gpu_monitor_thread and gpu_monitor_thread.is_alive():
-                gpu_monitor_thread.join(timeout=0.5)
-            
-            # Extract generated text
-            if isinstance(outputs, torch.Tensor):
-                # When return_dict_in_generate=False, outputs is a tensor
-                generated_tokens = outputs[0][len(inputs['input_ids'][0]):]
-            else:
-                # Fallback for dict format
-                generated_tokens = outputs.sequences[0][len(inputs['input_ids'][0]):]
-            
-            generated_text = self.processor.tokenizer.decode(generated_tokens, skip_special_tokens=True)
-            
-            # Clean up the generated text
-            generated_text = generated_text.replace('<|im_end|>', '').strip()
-            
-            # Save token count before cleanup
-            output_token_count = len(generated_tokens)
-            
-            # Clean up tensors to free memory
-            del inputs
-            del outputs
-            del generated_tokens
-            torch.cuda.empty_cache()  # Clear CUDA cache
+                
+                output_token_count = streaming_metrics.get('output_tokens', 0)
+                generation_end_time = time.time()
+                total_end_time = time.time()
+                
+                # Wait for GPU monitoring to complete (max 0.5 seconds)
+                if gpu_monitor_thread and gpu_monitor_thread.is_alive():
+                    gpu_monitor_thread.join(timeout=0.5)
+                
+                # Use streaming metrics for accurate latency calculation
+                latency_metrics = self._calculate_accurate_latency_metrics(
+                    total_start_time, input_end_time, generation_start_time,
+                    generation_end_time, total_end_time, input_token_count,
+                    output_token_count, gpu_monitor_data, streaming_metrics
+                )
+                
+            except Exception as e:
+                logger.warning(f"Streaming generation failed, falling back to batch generation: {e}")
+                
+                # Fallback to batch generation
+                with torch.no_grad():
+                    outputs = self.model.generate(
+                        **inputs,
+                        max_new_tokens=max_new_tokens,
+                        temperature=temperature,
+                        top_p=top_p,
+                        do_sample=True,
+                        pad_token_id=self.processor.tokenizer.eos_token_id,
+                        return_dict_in_generate=False,  # 减少内存开销
+                        output_scores=False,  # 不返回scores以节省内存
+                        return_audio=False
+                    )
+                
+                # Record time after generation
+                generation_end_time = time.time()
+                
+                # Wait for GPU monitoring to complete (max 0.5 seconds)
+                if gpu_monitor_thread and gpu_monitor_thread.is_alive():
+                    gpu_monitor_thread.join(timeout=0.5)
+                
+                # Extract generated text
+                if isinstance(outputs, torch.Tensor):
+                    # When return_dict_in_generate=False, outputs is a tensor
+                    generated_tokens = outputs[0][len(inputs['input_ids'][0]):]
+                else:
+                    # Fallback for dict format
+                    generated_tokens = outputs.sequences[0][len(inputs['input_ids'][0]):]
+                
+                generated_text = self.processor.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+                
+                # Clean up the generated text
+                generated_text = generated_text.replace('<|im_end|>', '').strip()
+                
+                # Save token count before cleanup
+                output_token_count = len(generated_tokens)
+                
+                # Clean up tensors to free memory
+                del inputs
+                del outputs
+                del generated_tokens
+                torch.cuda.empty_cache()  # Clear CUDA cache
+                
+                # Calculate latency metrics using fallback method
+                latency_metrics = self._calculate_latency_metrics(
+                    total_start_time, input_end_time, generation_start_time, 
+                    generation_end_time, total_end_time, input_token_count, 
+                    output_token_count, gpu_monitor_data
+                )
             
             # Record total end time
             total_end_time = time.time()
-            
-            # Calculate detailed latency metrics
-            latency_metrics = self._calculate_latency_metrics(
-                total_start_time, input_end_time, generation_start_time, 
-                generation_end_time, total_end_time, input_token_count, 
-                output_token_count, gpu_monitor_data
-            )
             
             logger.info(f"Generated text: {generated_text}")
             logger.info(f"Latency metrics: {latency_metrics}")
@@ -332,71 +363,52 @@ class CloudModel:
             'gpu_memory_gb': gpu_memory_gb  # GPU memory usage in GB
         }
     
-    def verify_tokens(self, 
-                     draft_tokens: List[int],
-                     audio_features: torch.Tensor,
-                     prefix_tokens: Optional[List[int]] = None) -> Tuple[List[int], int]:
+    def verify_tokens(self, context: dict, draft_tokens: list, threshold: float = 0.25) -> tuple[list, Optional[int], bool]:
         """
-        Verify draft tokens and find longest safe prefix
-        
-        Args:
-            draft_tokens: Tokens to verify
-            audio_features: Audio features for context
-            prefix_tokens: Previous verified tokens
-            
-        Returns:
-            Tuple of (accepted_tokens, verification_length)
+        Prefill 一次（forward），按阈值逐位验收；首错用 p(·) 直接采样纠正
+        返回: (accepted_tokens, correction_token, needs_correction)
         """
-        try:
-            if not draft_tokens:
-                return [], 0
-            
-            # Prepare prompt for verification
-            prompt = "Based on the audio features, describe the emotional state of the speaker:"
-            
-            # Tokenize the prompt
-            inputs = self.tokenizer(prompt, return_tensors="pt")
-            input_ids = inputs["input_ids"].to(self.device)
-            
-            # Add prefix tokens if provided
-            if prefix_tokens:
-                input_ids = torch.cat([input_ids, torch.tensor([prefix_tokens]).to(self.device)], dim=1)
-            
-            # Add draft tokens for verification
-            draft_tensor = torch.tensor([draft_tokens]).to(self.device)
-            full_input_ids = torch.cat([input_ids, draft_tensor], dim=1)
-            
-            # Generate with the cloud model to verify
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    full_input_ids,
-                    max_new_tokens=len(draft_tokens),
-                    temperature=0.1,  # Lower temperature for verification
-                    do_sample=False,  # Use greedy decoding for verification
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    return_dict_in_generate=True
-                )
-            
-            # Extract generated tokens (excluding input tokens)
-            generated_tokens = outputs.sequences[0][len(full_input_ids[0]):].tolist()
-            
-            # Find the longest common prefix between draft and generated tokens
-            accepted_tokens = []
-            verification_length = 0
-            
-            for i, (draft_token, gen_token) in enumerate(zip(draft_tokens, generated_tokens)):
-                if draft_token == gen_token:
-                    accepted_tokens.append(draft_token)
-                    verification_length += 1
-                else:
-                    break
-            
-            logger.info(f"Verified {verification_length}/{len(draft_tokens)} tokens")
-            return accepted_tokens, verification_length
-            
-        except Exception as e:
-            logger.error(f"Error in verify_tokens: {e}")
-            return [], 0
+        import torch
+        if not draft_tokens:
+            return [], None, False
+
+        # 1) 设备与拼接（把 edge 张量搬到 cloud 设备）
+        ctx_ids = context['input_ids'].to(self.device)
+        ctx_mask = context['attention_mask'].to(self.device)
+        y = torch.tensor([draft_tokens], device=self.device)
+        full_ids = torch.cat([ctx_ids, y], dim=1)
+        full_mask = torch.cat([ctx_mask, torch.ones_like(y)], dim=1)
+
+        # 2) 一次前向，取 logits
+        # 使用 self.model.thinker(**inputs) 调用文本子模型
+        with torch.no_grad():
+            inputs = {
+                'input_ids': full_ids,
+                'attention_mask': full_mask,
+            }
+            out = self.model.thinker(**inputs)
+        logits = out.logits[0]  # [m+k, V]
+        m = ctx_ids.shape[1]
+        k = len(draft_tokens)
+
+        # 3) 逐位计算 p(yi) 并找首个未通过
+        accepted = 0
+        for i in range(k):
+            pos = m - 1 + i            # 对应 yi 的预测位置
+            probs = torch.softmax(logits[pos], dim=-1)
+            p_i = probs[draft_tokens[i]].item()
+            if p_i >= threshold:
+                accepted += 1
+            else:
+                # 4) 首错纠正：直接按 p(·) 采样一个 token
+                corr = torch.multinomial(probs, 1).item()
+                return draft_tokens[:accepted], corr, True
+
+        # 全部通过
+        return draft_tokens, None, False
+
+    
+    
     
     def update_kv_cache(self, tokens: List[int]):
         """Update KV cache with new tokens"""
@@ -454,3 +466,124 @@ class CloudModel:
         except Exception as e:
             logger.error(f"Error in rollback_and_regenerate: {e}")
             return []
+    
+    def _calculate_accurate_latency_metrics(self,
+                                          total_start: float,
+                                          input_end: float,
+                                          gen_start: float,
+                                          gen_end: float,
+                                          total_end: float,
+                                          input_tokens: int,
+                                          output_tokens: int,
+                                          gpu_monitor_data: dict = None,
+                                          streaming_metrics: dict = None) -> dict:
+        """
+        Calculate accurate latency metrics using streaming data
+        
+        Args:
+            total_start: Total start time
+            input_end: Input processing end time
+            gen_start: Generation start time
+            gen_end: Generation end time
+            total_end: Total end time
+            input_tokens: Number of input tokens
+            output_tokens: Number of output tokens
+            gpu_monitor_data: GPU monitoring data
+            streaming_metrics: Streaming generation metrics
+            
+        Returns:
+            Dictionary of accurate latency metrics
+        """
+        # Use streaming TTFT if available
+        if streaming_metrics and 'ttft' in streaming_metrics:
+            ttft = streaming_metrics['ttft']
+        else:
+            # Fallback to generation time
+            ttft = gen_end - gen_start
+        
+        # Input Token Per Second (ITPS): Input processing speed
+        input_processing_time = input_end - total_start
+        itps = input_tokens / input_processing_time if input_processing_time > 0 else 0
+        
+        # Output Token Per Second (OTPS): Generation speed (excluding TTFT)
+        generation_time = gen_end - gen_start
+        if streaming_metrics and 'step_times' in streaming_metrics and streaming_metrics['step_times']:
+            # Use actual token generation times (excluding TTFT)
+            token_generation_time = sum(streaming_metrics['step_times'])
+            otps = output_tokens / token_generation_time if token_generation_time > 0 else 0
+        else:
+            # Fallback to total generation time
+            otps = output_tokens / generation_time if generation_time > 0 else 0
+        
+        # Output Evaluation Time (OET): Total generation time
+        oet = generation_time
+        
+        # Total Time: Complete response generation time
+        total_time = total_end - total_start
+        
+        # Get CPU and GPU usage with improved measurement
+        try:
+            import time
+            
+            # Get current process
+            process = psutil.Process()
+            
+            # Improved CPU usage measurement
+            cpu_percent = process.cpu_percent(interval=0.5)
+            
+            if cpu_percent == 0.0:
+                system_cpu = psutil.cpu_percent(interval=0.2)
+                cpu_percent = min(system_cpu * 0.1, 100.0)
+            
+            if cpu_percent == 0.0:
+                cpu_percent = 0.1
+            
+            # RAM usage in GB
+            memory_info = process.memory_info()
+            ram_gb = memory_info.rss / (1024 ** 3)
+            
+            # GPU usage - use real-time monitoring data if available
+            gpu_util = 0.0
+            gpu_memory_gb = 0.0
+            
+            if gpu_monitor_data and gpu_monitor_data.get('gpu_util_samples'):
+                gpu_util_samples = gpu_monitor_data['gpu_util_samples']
+                gpu_util = max(gpu_util_samples) if gpu_util_samples else 0.0
+                gpu_memory_gb = gpu_monitor_data.get('gpu_memory_gb', 0.0)
+            else:
+                try:
+                    import pynvml
+                    pynvml.nvmlInit()
+                    device_count = pynvml.nvmlDeviceGetCount()
+                    if device_count > 0:
+                        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                        gpu_util_info = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                        gpu_memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                        gpu_util = gpu_util_info.gpu
+                        gpu_memory_gb = gpu_memory_info.used / (1024 ** 3)
+                except Exception as e:
+                    logger.debug(f"Fallback GPU monitoring failed: {e}")
+                    gpu_util = 0.0
+                    gpu_memory_gb = 0.0
+            
+        except Exception as e:
+            logger.warning(f"Failed to get CPU/GPU usage: {e}")
+            cpu_percent = 0.0
+            ram_gb = 0.0
+            gpu_util = 0.0
+            gpu_memory_gb = 0.0
+        
+        return {
+            'ttft': ttft,                    # Accurate Time-to-First-Token (sec)
+            'itps': itps,                    # Input Token Per Second (tokens/sec)
+            'otps': otps,                    # Accurate Output Token Per Second (tokens/sec)
+            'oet': oet,                      # Output Evaluation Time (sec)
+            'total_time': total_time,        # Total Time (sec)
+            'input_tokens': input_tokens,    # Number of input tokens
+            'output_tokens': output_tokens,  # Number of output tokens
+            'cpu_percent': cpu_percent,      # CPU usage percentage (peak)
+            'ram_gb': ram_gb,                # RAM usage in GB
+            'gpu_util': gpu_util,            # GPU utilization percentage
+            'gpu_memory_gb': gpu_memory_gb,  # GPU memory usage in GB
+            'streaming_metrics': streaming_metrics  # Additional streaming data
+        }

@@ -10,7 +10,6 @@ from unittest.mock import Mock, patch
 
 from src.models.edge_model import EdgeModel
 from src.models.cloud_model import CloudModel
-from src.models.speculative_decoder import SpeculativeDecoder
 
 
 class TestEdgeModel:
@@ -64,58 +63,4 @@ class TestCloudModel:
             assert hasattr(model, 'prefix_cache')
 
 
-class TestSpeculativeDecoder:
-    """Test speculative decoder functionality"""
-    
-    def test_initialization(self):
-        """Test decoder initialization"""
-        with patch('src.models.edge_model.EdgeModel') as mock_edge, \
-             patch('src.models.cloud_model.CloudModel') as mock_cloud:
-            
-            mock_edge.return_value = Mock()
-            mock_cloud.return_value = Mock()
-            
-            config = {
-                'entropy_threshold': 2.0,
-                'margin_threshold': 0.1,
-                'log_prob_threshold': -2.0,
-                'content_rules': {
-                    'verify_numbers': True,
-                    'verify_dates': True,
-                    'verify_names': True
-                }
-            }
-            
-            decoder = SpeculativeDecoder(mock_edge(), mock_cloud(), config)
-            
-            assert decoder.entropy_threshold == 2.0
-            assert decoder.margin_threshold == 0.1
-            assert decoder.log_prob_threshold == -2.0
-            assert decoder.content_rules['verify_numbers'] is True
-    
-    def test_content_rules(self):
-        """Test content-aware verification rules"""
-        with patch('src.models.edge_model.EdgeModel') as mock_edge, \
-             patch('src.models.cloud_model.CloudModel') as mock_cloud:
-            
-            mock_edge.return_value = Mock()
-            mock_cloud.return_value = Mock()
-            
-            config = {
-                'content_rules': {
-                    'verify_numbers': True,
-                    'verify_dates': True,
-                    'verify_names': True
-                }
-            }
-            
-            decoder = SpeculativeDecoder(mock_edge(), mock_cloud(), config)
-            
-            # Mock tokenizer
-            decoder.edge_model.tokenizer.decode = lambda x: " ".join([str(t) for t in x])
-            
-            # Test number detection
-            assert decoder._check_content_rules([1, 2, 3]) is False  # No numbers in text
-            
-            # Test name detection
             assert decoder._check_content_rules([1, 2, 3]) is False  # No names in text
