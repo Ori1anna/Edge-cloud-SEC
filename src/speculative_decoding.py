@@ -20,7 +20,6 @@ class SimpleSpeculativeDecoding:
                  edge_model: EdgeModel, 
                  cloud_model: CloudModel,
                  entropy_threshold: float = 1.5,
-                 prob_threshold: float = 0.25,
                  k: int = 5):
         """
         Initialize speculative decoding system
@@ -29,17 +28,14 @@ class SimpleSpeculativeDecoding:
             edge_model: Edge model for drafting
             cloud_model: Cloud model for verification
             entropy_threshold: Threshold for entropy-based uncertainty
-            prob_threshold: Threshold for token acceptance
             k: Number of draft tokens to generate
         """
         self.edge_model = edge_model
         self.cloud_model = cloud_model
         self.entropy_threshold = entropy_threshold
-        self.prob_threshold = prob_threshold
         self.k = k
         
-        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, "
-                   f"prob_threshold={prob_threshold}, k={k}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}")
     
     def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str) -> dict:
         """Prepare initial context from audio and prompt"""
@@ -118,11 +114,16 @@ class SimpleSpeculativeDecoding:
             token_text = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
             
             # Stop on Chinese period, newline, or "Human" (conversation end)
-            if token_text in ['。', '\n', 'Human', 'Human:']:
+            if token_text in ['。', '\n', 'Human', 'Human:', 'Please', 'functionalities', '—', '**', '"', '"', '```', '```', '我/', '我/']:
                 return True
                 
             # Stop if token contains newline (for multi-token newlines)
             if '\n' in token_text:
+                return True
+                
+            # Stop on truly problematic patterns that indicate generation issues
+            # Only stop on patterns that are universally problematic across datasets
+            if token_text in ['<|endoftext|>', '<|im_end|>', '<|end|>']:
                 return True
                 
                 
@@ -310,8 +311,9 @@ class SimpleSpeculativeDecoding:
                     
                     # Step 4: Cloud model verifies draft tokens
                     # Pass full context including audio features
+                    # Note: prob_threshold is no longer needed as we use rank-based threshold internally
                     accepted_tokens, correction_token, needs_correction = self.cloud_model.verify_tokens(
-                        current_context, draft_tokens, self.prob_threshold
+                        current_context, draft_tokens, None  # prob_threshold no longer used
                     )
                     
                     if needs_correction:
@@ -414,6 +416,30 @@ class SimpleSpeculativeDecoding:
                 
                 if should_stop:
                     break
+                    
+                # Minimal quality control: only stop on truly universal issues
+                if len(generated_tokens) > 15:  # After generating some tokens
+                    try:
+                        current_text = self._decode_tokens(generated_tokens)
+                        
+                        # Stop only on model-specific stop tokens (universal across all models)
+                        if any(pattern in current_text for pattern in ['<|endoftext|>', '<|im_end|>', '<|end|>']):
+                            logger.info(f"Stopping due to model-specific stop tokens: {current_text}")
+                            break
+                            
+                        # Stop if text is extremely long (prevent runaway generation)
+                        if len(current_text) > 1000:  # Very generous limit for any dataset
+                            logger.info(f"Stopping due to excessive text length: {len(current_text)} characters")
+                            break
+                            
+                        # Stop if text is extremely repetitive (same token repeated many times)
+                        if len(set(generated_tokens[-25:])) < 2 and len(generated_tokens) > 25:  # Very strict repetition check
+                            logger.info(f"Stopping due to extreme repetition: {generated_tokens[-25:]}")
+                            break
+                            
+                    except Exception as e:
+                        logger.debug(f"Error checking generated text quality: {e}")
+                        # Continue generation if text checking fails
             
             # Wait for GPU monitoring to complete
             if gpu_monitor_thread and gpu_monitor_thread.is_alive():
@@ -639,12 +665,27 @@ class SimpleSpeculativeDecoding:
                     # Apply temperature and repetition penalty
                     logits_temp = logits / 0.7  # Temperature scaling
                     
-                    # Simple repetition penalty: reduce probability of recently generated tokens
+                    # Enhanced repetition penalty: reduce probability of recently generated tokens
                     if len(draft_tokens) > 0:
-                        recent_tokens = draft_tokens[-2:]  # Look at last 2 tokens
+                        recent_tokens = draft_tokens[-5:]  # Look at last 5 tokens
                         for token_id in recent_tokens:
                             if logits_temp[token_id] > 0:
-                                logits_temp[token_id] = logits_temp[token_id] / 1.15  # Penalty factor
+                                logits_temp[token_id] = logits_temp[token_id] / 1.5  # Stronger penalty
+                    
+                    # Additional penalty for common problematic tokens
+                    problematic_tokens = [
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('请'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('好'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('的'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('调'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('语'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('声'),
+                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('，'),
+                    ]
+                    
+                    for token_id in problematic_tokens:
+                        if token_id is not None and token_id < logits_temp.size(0) and logits_temp[token_id] > 0:
+                            logits_temp[token_id] = logits_temp[token_id] / 2.0  # Heavy penalty for problematic tokens
                     
                     # Apply top-p filtering
                     sorted_logits, sorted_indices = torch.sort(logits_temp, descending=True)

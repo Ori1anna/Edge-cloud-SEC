@@ -115,7 +115,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.5 \
-    --prob_threshold 0.15 \
     --k 3
 ```
 
@@ -132,7 +131,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.5 \
-    --prob_threshold 0.15 \
     --k 3
 ```
 
@@ -147,7 +145,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.45 \
-    --prob_threshold 0.24 \
     --k 5
 ```
 
@@ -163,7 +160,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 2.0 \
-    --prob_threshold 0.1 \
     --k 5
 
 # 高精度配置（增加Cloud调用）
@@ -176,7 +172,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.0 \
-    --prob_threshold 0.3 \
     --k 3
 ```
 
@@ -203,13 +198,12 @@ python experiments/runs/run_speculative_decoding.py \
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `--entropy_threshold` | float | `1.5` | 熵不确定性阈值 |
-| `--prob_threshold` | float | `0.15` | Token接受概率阈值 |
 | `--k` | int | `3` | 每次生成的draft token数量 |
 
 ### 参数调优建议
 - **entropy_threshold**: 1.0-2.0，值越高Cloud调用越少
-- **prob_threshold**: 0.1-0.3，值越低接受率越高
 - **k**: 3-5，值越大每次draft越多但计算开销越大
+- **注意**: 现在使用内部排名阈值策略，不再需要手动设置prob_threshold
 
 ## 📁 输出文件说明
 
@@ -271,7 +265,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.5 \
-    --prob_threshold 0.15 \
     --k 3
 ```
 
@@ -307,7 +300,6 @@ python experiments/runs/run_speculative_decoding.py \
     --language chinese \
     --prompt_type default \
     --entropy_threshold 1.45 \
-    --prob_threshold 0.24 \
     --k 5
 ```
 

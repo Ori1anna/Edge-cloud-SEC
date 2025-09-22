@@ -367,10 +367,12 @@ class CloudModel:
             'gpu_memory_gb': gpu_memory_gb  # GPU memory usage in GB
         }
     
-    def verify_tokens(self, context: dict, draft_tokens: list, threshold: float = 0.25) -> tuple[list, Optional[int], bool]:
+    def verify_tokens(self, context: dict, draft_tokens: list, threshold: float = None) -> tuple[list, Optional[int], bool]:
         """
-        Prefill 一次（forward），按阈值逐位验收；首错用 p(·) 直接采样纠正
+        Prefill 一次（forward），按排名阈值逐位验收；首错用贪心选择纠正
         返回: (accepted_tokens, correction_token, needs_correction)
+        
+        Note: threshold parameter is deprecated, using internal rank-based threshold
         """
         import torch
         if not draft_tokens:
@@ -415,13 +417,18 @@ class CloudModel:
         accepted = 0
         probabilities = []
         
-        # 使用排名阈值替代绝对概率阈值
-        rank_threshold = 10  # 接受排名前10的token
-        min_prob_threshold = 0.005  # 最小概率阈值
+        # 纯使用排名阈值，不使用概率阈值
+        rank_threshold = 20  # 接受排名前20的token
         
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置
-            probs = torch.softmax(logits[pos], dim=-1)
+            
+            # CRITICAL: Convert to float32 to avoid FP16 underflow
+            row = logits[pos].float()
+            # Optional: Subtract max for numerical stability
+            row = row - row.max()
+            probs = torch.softmax(row, dim=-1)
+            
             p_i = probs[draft_tokens[i]].item()
             probabilities.append(p_i)
             
@@ -429,7 +436,7 @@ class CloudModel:
             sorted_probs, sorted_indices = torch.sort(probs, descending=True)
             rank = (sorted_indices == draft_tokens[i]).nonzero(as_tuple=True)[0].item() + 1
             
-            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.4f}, rank={rank}, min_threshold={min_prob_threshold:.4f}")
+            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.3e}, rank={rank}, rank_threshold={rank_threshold}")
             
             # Additional debugging for extremely low probabilities
             if p_i < 1e-6:
@@ -438,10 +445,10 @@ class CloudModel:
                 top_k_probs, top_k_indices = torch.topk(probs, k=min(10, probs.size(0)))
                 logger.warning(f"Top-10 tokens: {[(idx.item(), prob.item()) for idx, prob in zip(top_k_indices, top_k_probs)]}")
             
-            # 使用排名阈值或最小概率阈值的组合策略
-            if rank <= rank_threshold or p_i >= min_prob_threshold:
+            # 纯使用排名阈值策略
+            if rank <= rank_threshold:
                 accepted += 1
-                logger.debug(f"  -> ACCEPTED (rank={rank} <= {rank_threshold} OR p_i={p_i:.4f} >= {min_prob_threshold:.4f})")
+                logger.debug(f"  -> ACCEPTED (rank={rank} <= {rank_threshold})")
             else:
                 # 首错纠正：使用贪心选择（top-1）而非随机采样
                 corr = torch.argmax(probs).item()

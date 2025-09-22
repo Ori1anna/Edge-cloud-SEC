@@ -115,7 +115,6 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                                       language: str = "chinese",
                                       prompt_type: str = "default",
                                       entropy_threshold: float = 1.5,
-                                      prob_threshold: float = 0.15,
                                       k: int = 3):
     """
     Run speculative decoding experiment with flexible configuration
@@ -131,7 +130,6 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
         language: Language for generation ("chinese", "english")
         prompt_type: Type of prompt to use ("default", "detailed", "concise")
         entropy_threshold: Threshold for entropy-based uncertainty
-        prob_threshold: Threshold for token acceptance
         k: Number of draft tokens to generate
     """
     
@@ -151,7 +149,7 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
     logger.info(f"Caption type: {caption_type}")
     logger.info(f"Language: {language}")
     logger.info(f"Prompt type: {prompt_type}")
-    logger.info(f"Speculative Decoding params: entropy_threshold={entropy_threshold}, prob_threshold={prob_threshold}, k={k}")
+    logger.info(f"Speculative Decoding params: entropy_threshold={entropy_threshold}, k={k}")
     
     # Initialize models and processors
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -166,7 +164,6 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
         edge_model=edge_model,
         cloud_model=cloud_model,
         entropy_threshold=entropy_threshold,
-        prob_threshold=prob_threshold,
         k=k
     )
     
@@ -202,7 +199,7 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
             generated_text, latency_metrics = spec_decoding.generate(
                 audio_features=audio_waveform,
                 prompt=prompt_template,
-                max_new_tokens=32
+                max_new_tokens=64  # Increased to allow for longer Chinese emotion descriptions
             )
             
             # Calculate metrics
@@ -237,7 +234,6 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                 "speculative_decoding_metrics": spec_metrics,
                 "speculative_decoding_config": {
                     "entropy_threshold": entropy_threshold,
-                    "prob_threshold": prob_threshold,
                     "k": k
                 }
             }
@@ -322,7 +318,6 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                 "total_samples": len(results),
                 "speculative_decoding_config": {
                     "entropy_threshold": entropy_threshold,
-                    "prob_threshold": prob_threshold,
                     "k": k
                 }
             },
@@ -393,8 +388,6 @@ def main():
     # Speculative decoding specific parameters
     parser.add_argument("--entropy_threshold", type=float, default=1.5, 
                        help="Threshold for entropy-based uncertainty")
-    parser.add_argument("--prob_threshold", type=float, default=0.15, 
-                       help="Threshold for token acceptance")
     parser.add_argument("--k", type=int, default=3, 
                        help="Number of draft tokens to generate")
     
@@ -411,7 +404,6 @@ def main():
         language=args.language,
         prompt_type=args.prompt_type,
         entropy_threshold=args.entropy_threshold,
-        prob_threshold=args.prob_threshold,
         k=args.k
     )
 
