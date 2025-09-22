@@ -484,8 +484,9 @@ class SimpleSpeculativeDecoding:
                 gpu_memory_gb = 0.0
             
             # Calculate latency metrics (compatible with baseline format)
-            # Time-to-First-Token (TTFT): Time from generation start to first draft token generation
-            # This measures the time until Edge model generates its first draft tokens
+            # Time-to-First-Token (TTFT): Time from generation start to first token acceptance
+            # This measures the time until the first token is accepted (either by Cloud verification or low uncertainty)
+            # For speculative decoding, TTFT represents when the first token is actually accepted and committed to output
             if first_token_time is not None:
                 ttft = first_token_time - generation_start_time
             else:

@@ -1,0 +1,202 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 2,
+    "total_samples": 2,
+    "hardware_config": {
+      "device": "cpu",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 6.0,
+      "model_dtype": "float32"
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.31570643609209076,
+    "avg_cider": 0.5009866579815659,
+    "latency_metrics": {
+      "ttft_mean": 18.4884694814682,
+      "ttft_min": 17.9671528339386,
+      "ttft_max": 19.009786128997803,
+      "itps_mean": 6577.855200312235,
+      "itps_min": 2437.799605537204,
+      "itps_max": 10717.910795087266,
+      "otps_mean": 0.038420782809486756,
+      "otps_min": 0.037627492430498004,
+      "otps_max": 0.039214073188475515,
+      "oet_mean": 23.158230185508728,
+      "oet_min": 22.346915245056152,
+      "oet_max": 23.969545125961304,
+      "total_time_mean": 23.362054347991943,
+      "total_time_min": 22.41775679588318,
+      "total_time_max": 24.306351900100708,
+      "cpu_percent_mean": 194.74486949080054,
+      "cpu_percent_min": 194.68886178861825,
+      "cpu_percent_max": 194.80087719298282,
+      "ram_gb_mean": 20.43891052920236,
+      "ram_gb_min": 20.355017902405283,
+      "ram_gb_max": 20.522803155999433,
+      "gpu_util_mean": 0.0,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 0.0,
+      "gpu_memory_gb_mean": 0.86175537109375,
+      "gpu_memory_gb_min": 0.86175537109375,
+      "gpu_memory_gb_max": 0.86175537109375,
+      "avg_input_tokens": 790.0,
+      "avg_output_tokens": 8.5,
+      "total_input_tokens": 1580,
+      "total_output_tokens": 17
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音低沉，情绪激动。",
+      "bleu_score": 0.03285702044797773,
+      "cider_score": 0.21081851067789195,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 19.009786128997803,
+        "itps": 2437.799605537204,
+        "otps": 0.037627492430498004,
+        "oet": 23.969545125961304,
+        "total_time": 24.306351900100708,
+        "input_tokens": 821,
+        "output_tokens": 9,
+        "cpu_percent": 194.68886178861825,
+        "ram_gb": 20.355017902405283,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "streaming_metrics": {
+          "ttft": 19.009786128997803,
+          "itps": 0,
+          "otps": 1.8165039553953706,
+          "oet": 23.96435832977295,
+          "total_time": 23.96435832977295,
+          "input_tokens": 821,
+          "output_tokens": 9,
+          "step_times": [
+            19.009786128997803,
+            19.636557817459106,
+            20.18110966682434,
+            20.72424578666687,
+            21.259531259536743,
+            21.79299807548523,
+            22.340648889541626,
+            22.89083957672119,
+            23.423076152801514,
+            23.963900327682495,
+            23.96411943435669
+          ],
+          "first_token_time": 19.009786128997803,
+          "text_chunks": [
+            "悲伤",
+            "",
+            "，声音",
+            "低",
+            "沉",
+            "",
+            "，情绪",
+            "激动",
+            "",
+            "",
+            "。"
+          ]
+        },
+        "cpu_avg": 194.68886178861825,
+        "cpu_max": 209.7,
+        "memory_avg_gb": 20.355017902405283,
+        "memory_max_gb": 20.783859252929688,
+        "hardware_limits": {
+          "max_cpu_cores": 2,
+          "max_memory_gb": 6.0
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "model_dtype": "float32"
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "悲伤，声音颤抖，情绪激动。",
+      "bleu_score": 0.5985558517362037,
+      "cider_score": 0.79115480528524,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 17.9671528339386,
+        "itps": 10717.910795087266,
+        "otps": 0.039214073188475515,
+        "oet": 22.346915245056152,
+        "total_time": 22.41775679588318,
+        "input_tokens": 759,
+        "output_tokens": 8,
+        "cpu_percent": 194.80087719298282,
+        "ram_gb": 20.522803155999433,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "streaming_metrics": {
+          "ttft": 17.9671528339386,
+          "itps": 0,
+          "otps": 1.8267154539422554,
+          "oet": 22.346597909927368,
+          "total_time": 22.346597909927368,
+          "input_tokens": 759,
+          "output_tokens": 8,
+          "step_times": [
+            17.9671528339386,
+            18.57201862335205,
+            19.114941120147705,
+            19.666287899017334,
+            20.186747312545776,
+            20.72763466835022,
+            21.279566287994385,
+            21.803709745407104,
+            22.344999074935913,
+            22.34533405303955
+          ],
+          "first_token_time": 17.9671528339386,
+          "text_chunks": [
+            "悲伤",
+            "",
+            "，声音",
+            "颤抖",
+            "",
+            "，情绪",
+            "激动",
+            "",
+            "",
+            "。"
+          ]
+        },
+        "cpu_avg": 194.80087719298282,
+        "cpu_max": 209.8,
+        "memory_avg_gb": 20.522803155999433,
+        "memory_max_gb": 20.953227996826172,
+        "hardware_limits": {
+          "max_cpu_cores": 2,
+          "max_memory_gb": 6.0
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "model_dtype": "float32"
+      }
+    }
+  ]
+}

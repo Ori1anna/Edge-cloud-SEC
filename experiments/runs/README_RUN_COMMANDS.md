@@ -303,12 +303,59 @@ python experiments/runs/run_speculative_decoding.py \
     --k 5
 ```
 
+## 🚀 CPU-Limited Edge + GPU Cloud 测试 (iPhone 15 Plus 模拟)
+
+### 硬件限制的Edge-Only基线测试
+```bash
+# 模拟iPhone 15 Plus硬件约束的Edge模型测试
+python experiments/runs/run_edge_baseline_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name edge_cpu_limited_iphone15 \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --max_cpu_cores 2 \
+    --max_memory_gb 6.0
+```
+
+### 硬件限制的Speculative Decoding测试
+```bash
+# CPU-limited Edge + GPU Cloud 混合模式
+python experiments/runs/run_speculative_decoding_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name speculative_decoding_cpu_limited \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --entropy_threshold 4.0 \
+    --k 5 \
+    --max_cpu_cores 2 \
+    --max_memory_gb 6.0
+```
+
+### 硬件配置说明
+- **Edge端 (iPhone 15 Plus模拟)**:
+  - CPU: 2个性能核心 (A17 Pro芯片)
+  - 内存: 6GB (总共8GB，预留2GB给系统)
+  - 设备: CPU + float32精度
+  - 存储: NVMe SSD
+
+- **Cloud端 (G100 GPU)**:
+  - GPU: G100 64GB显存
+  - 设备: CUDA + float16精度
+  - 高性能计算资源
+
 ## 🎯 推荐运行顺序
 
 1. **快速验证**：先运行3个样本的快速测试，确保代码正常
-2. **参数调优**：使用20-50个样本测试不同参数组合
-3. **完整评估**：使用100+样本进行完整性能评估
-4. **结果分析**：对比三个方法的latency metrics和quality metrics
+2. **硬件对比**：对比CPU-limited vs GPU baseline性能
+3. **参数调优**：使用20-50个样本测试不同参数组合
+4. **完整评估**：使用100+样本进行完整性能评估
+5. **结果分析**：对比三个方法的latency metrics和quality metrics
 
 ## ⚠️ 注意事项
 

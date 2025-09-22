@@ -1,0 +1,132 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 2,
+    "total_samples": 2,
+    "hardware_config": {
+      "device": "cpu",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 6.0,
+      "model_dtype": "float32"
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.3061828230174889,
+    "avg_cider": 0.506103098011323,
+    "latency_metrics": {
+      "ttft_mean": 21.623096585273743,
+      "ttft_min": 21.43349599838257,
+      "ttft_max": 21.812697172164917,
+      "itps_mean": 11342.789856614312,
+      "itps_min": 9607.187929649139,
+      "itps_max": 13078.391783579484,
+      "otps_mean": 0.5558159005632491,
+      "otps_min": 0.4584485779576564,
+      "otps_max": 0.6531832231688418,
+      "oet_mean": 21.623096585273743,
+      "oet_min": 21.43349599838257,
+      "oet_max": 21.812697172164917,
+      "total_time_mean": 21.69515109062195,
+      "total_time_min": 21.491841316223145,
+      "total_time_max": 21.898460865020752,
+      "cpu_percent_mean": 0.33999999999999997,
+      "cpu_percent_min": 0.27999999999999997,
+      "cpu_percent_max": 0.4,
+      "ram_gb_mean": 21.02820587158203,
+      "ram_gb_min": 20.974029541015625,
+      "ram_gb_max": 21.082382202148438,
+      "gpu_util_mean": 0.0,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 0.0,
+      "gpu_memory_gb_mean": 0.86175537109375,
+      "gpu_memory_gb_min": 0.86175537109375,
+      "gpu_memory_gb_max": 0.86175537109375,
+      "avg_input_tokens": 790.0,
+      "avg_output_tokens": 12.0,
+      "total_input_tokens": 1580,
+      "total_output_tokens": 24
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音低沉，情绪压抑。",
+      "bleu_score": 0.03285702044797773,
+      "cider_score": 0.21081851067789195,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 21.812697172164917,
+        "itps": 9607.187929649139,
+        "otps": 0.4584485779576564,
+        "oet": 21.812697172164917,
+        "total_time": 21.898460865020752,
+        "input_tokens": 821,
+        "output_tokens": 10,
+        "cpu_percent": 0.4,
+        "ram_gb": 20.974029541015625,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "cpu_avg": 196.37747747747778,
+        "cpu_max": 209.7,
+        "memory_avg_gb": 20.99628328203081,
+        "memory_max_gb": 21.43553924560547,
+        "hardware_limits": {
+          "max_cpu_cores": 2,
+          "max_memory_gb": 6.0
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "model_dtype": "float32"
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "悲伤/难过/委屈，声音颤抖，情绪激动失望。",
+      "bleu_score": 0.579508625587,
+      "cider_score": 0.801387685344754,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 21.43349599838257,
+        "itps": 13078.391783579484,
+        "otps": 0.6531832231688418,
+        "oet": 21.43349599838257,
+        "total_time": 21.491841316223145,
+        "input_tokens": 759,
+        "output_tokens": 14,
+        "cpu_percent": 0.27999999999999997,
+        "ram_gb": 21.082382202148438,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "cpu_avg": 194.4408181818185,
+        "cpu_max": 209.7,
+        "memory_avg_gb": 21.10981622175737,
+        "memory_max_gb": 21.51178741455078,
+        "hardware_limits": {
+          "max_cpu_cores": 2,
+          "max_memory_gb": 6.0
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "model_dtype": "float32"
+      }
+    }
+  ]
+}

@@ -82,7 +82,8 @@ class StreamingGenerator:
                     first_token_time = current_time
                     ttft = first_token_time - total_start_time
                 else:
-                    ttft = None
+                    # Keep the original TTFT value for all subsequent tokens
+                    ttft = first_token_time - total_start_time
                 
                 # Calculate metrics
                 step_time = current_time - total_start_time
