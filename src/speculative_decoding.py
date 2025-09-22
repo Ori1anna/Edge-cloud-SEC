@@ -746,21 +746,24 @@ class SimpleSpeculativeDecoding:
             if not new_tokens:
                 return context
             
+            # CRITICAL: Create a copy to preserve all multimodal features
+            new_context = context.copy()  # Preserve input_features, feature_attention_mask, past_key_values, etc.
+            
             # Update input_ids and attention_mask
             new_tokens_tensor = torch.tensor([new_tokens], device=context['input_ids'].device)
-            context['input_ids'] = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
-            context['attention_mask'] = torch.cat([
-                context['attention_mask'], 
+            new_context['input_ids'] = torch.cat([new_context['input_ids'], new_tokens_tensor], dim=1)
+            new_context['attention_mask'] = torch.cat([
+                new_context['attention_mask'], 
                 torch.ones_like(new_tokens_tensor)
             ], dim=1)
             
             # Update last_token_id for next incremental generation
-            context['last_token_id'] = new_tokens_tensor[0, -1:].unsqueeze(0)
+            new_context['last_token_id'] = new_tokens_tensor[0, -1:].unsqueeze(0)
             
             # Note: KV cache management is handled separately in draft generation and correction logic
             logger.debug(f"Updated context with {len(new_tokens)} new tokens")
             
-            return context
+            return new_context
             
         except Exception as e:
             logger.error(f"Error in _update_context_incremental: {e}")
@@ -894,40 +897,3 @@ class SimpleSpeculativeDecoding:
             import traceback
             traceback.print_exc()
             return []
-    
-    def _update_context(self, context: dict, new_tokens: list) -> dict:
-        """
-        Update context with new tokens
-        
-        Args:
-            context: Current context dictionary
-            new_tokens: List of new token IDs to add
-            
-        Returns:
-            Updated context dictionary
-        """
-        try:
-            if not new_tokens:
-                return context
-            
-            # Convert new tokens to tensor
-            new_tokens_tensor = torch.tensor(new_tokens, device=self.edge_model.device).unsqueeze(0)
-            
-            # Update input_ids
-            updated_input_ids = torch.cat([context['input_ids'], new_tokens_tensor], dim=1)
-            
-            # Update attention_mask
-            new_attention_mask = torch.ones((1, len(new_tokens)), device=self.edge_model.device)
-            updated_attention_mask = torch.cat([context['attention_mask'], new_attention_mask], dim=1)
-            
-            # Create updated context
-            updated_context = context.copy()
-            updated_context['input_ids'] = updated_input_ids
-            updated_context['attention_mask'] = updated_attention_mask
-            
-            logger.debug(f"Updated context with {len(new_tokens)} new tokens")
-            return updated_context
-            
-        except Exception as e:
-            logger.error(f"Error updating context: {e}")
-            return context

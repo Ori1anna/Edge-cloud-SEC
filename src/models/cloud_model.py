@@ -411,9 +411,13 @@ class CloudModel:
         logger.debug(f"Cloud verification: context_length={m}, draft_length={k}, logits_shape={logits.shape}")
         logger.debug(f"Full input sequence length: {full_ids.shape[1]}")
 
-        # 4) 逐位阈值验收 + 首错纠正
+        # 4) 逐位排名阈值验收 + 首错纠正
         accepted = 0
         probabilities = []
+        
+        # 使用排名阈值替代绝对概率阈值
+        rank_threshold = 10  # 接受排名前10的token
+        min_prob_threshold = 0.005  # 最小概率阈值
         
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置
@@ -421,23 +425,29 @@ class CloudModel:
             p_i = probs[draft_tokens[i]].item()
             probabilities.append(p_i)
             
-            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.4f}, threshold={threshold:.4f}")
+            # 计算当前token的排名
+            sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+            rank = (sorted_indices == draft_tokens[i]).nonzero(as_tuple=True)[0].item() + 1
+            
+            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.4f}, rank={rank}, min_threshold={min_prob_threshold:.4f}")
             
             # Additional debugging for extremely low probabilities
             if p_i < 1e-6:
-                logger.warning(f"Extremely low probability for token {draft_tokens[i]}: {p_i:.2e}")
+                logger.warning(f"Extremely low probability for token {draft_tokens[i]}: {p_i:.2e}, rank={rank}")
                 # Check if this token is in the top-k predictions
                 top_k_probs, top_k_indices = torch.topk(probs, k=min(10, probs.size(0)))
                 logger.warning(f"Top-10 tokens: {[(idx.item(), prob.item()) for idx, prob in zip(top_k_indices, top_k_probs)]}")
             
-            if p_i >= threshold:
+            # 使用排名阈值或最小概率阈值的组合策略
+            if rank <= rank_threshold or p_i >= min_prob_threshold:
                 accepted += 1
-                logger.debug(f"  -> ACCEPTED (p_i={p_i:.4f} >= {threshold:.4f})")
+                logger.debug(f"  -> ACCEPTED (rank={rank} <= {rank_threshold} OR p_i={p_i:.4f} >= {min_prob_threshold:.4f})")
             else:
-                # 首错纠正：直接按 p(·) 采样一个 token
-                corr = torch.multinomial(probs, 1).item()
+                # 首错纠正：使用贪心选择（top-1）而非随机采样
+                corr = torch.argmax(probs).item()
                 logger.info(f"Cloud correction: accepted {accepted}/{k} tokens, first error at position {i}")
                 logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
+                logger.info(f"  -> Ranks: {[f'{rank}' for rank in [(sorted_indices == draft_tokens[j]).nonzero(as_tuple=True)[0].item() + 1 for j in range(len(probabilities))]]}")
                 logger.info(f"  -> Correction token: {corr} (replacing draft token {draft_tokens[i]})")
                 return draft_tokens[:accepted], corr, True
 
