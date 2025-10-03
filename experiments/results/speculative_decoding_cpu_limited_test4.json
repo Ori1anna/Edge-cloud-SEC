@@ -1,0 +1,188 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/secap/manifest.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "default",
+    "max_samples": 2,
+    "total_samples": 2,
+    "speculative_decoding_config": {
+      "entropy_threshold": 4.0,
+      "k": 5
+    },
+    "hardware_config": {
+      "edge_device": "cpu",
+      "cloud_device": "cuda",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 6.0,
+      "edge_model_dtype": "float32",
+      "cloud_model_dtype": "float16"
+    }
+  },
+  "metrics": {
+    "avg_bleu": 0.20786950893120099,
+    "avg_cider": 0.45853883881497715,
+    "latency_metrics": {
+      "ttft_mean": 19.998391032218933,
+      "ttft_min": 19.73008966445923,
+      "ttft_max": 20.266692399978638,
+      "itps_mean": 8288.478760261849,
+      "itps_min": 3916.8337776968924,
+      "itps_max": 12660.123742826805,
+      "otps_mean": 0.616691586288914,
+      "otps_min": 0.6090046588238437,
+      "otps_max": 0.6243785137539843,
+      "oet_mean": 24.327121138572693,
+      "oet_min": 24.02388882637024,
+      "oet_max": 24.630353450775146,
+      "total_time_mean": 24.462440133094788,
+      "total_time_min": 24.084272384643555,
+      "total_time_max": 24.84060788154602,
+      "cpu_percent_mean": 195.45433285509347,
+      "cpu_percent_min": 191.69647058823531,
+      "cpu_percent_max": 199.21219512195162,
+      "ram_gb_mean": 21.096261363607077,
+      "ram_gb_min": 21.027933446372426,
+      "ram_gb_max": 21.16458928084173,
+      "gpu_util_mean": 19.5,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 39.0,
+      "gpu_memory_gb_mean": 22.414306640625,
+      "gpu_memory_gb_min": 22.169189453125,
+      "gpu_memory_gb_max": 22.659423828125,
+      "avg_input_tokens": 790.0,
+      "avg_output_tokens": 15.0,
+      "total_input_tokens": 1580,
+      "total_output_tokens": 30
+    },
+    "speculative_decoding_metrics": {
+      "total_time_mean": 24.462440133094788,
+      "avg_cloud_calls": 0.5,
+      "avg_acceptance_rate": 1.0,
+      "avg_correction_rate": 0.0,
+      "avg_cloud_call_rate": 0.5,
+      "total_samples": 2
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "tx_emotion_00201000015",
+      "dataset": "secap",
+      "reference_caption": "悲伤逆流成河",
+      "generated_text": "悲伤，声音颤抖/低沉，情绪激动，难过。",
+      "bleu_score": 0.02153320854081468,
+      "cider_score": 0.16329931618554522,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 20.266692399978638,
+        "itps": 3916.8337776968924,
+        "otps": 0.6090046588238437,
+        "oet": 24.630353450775146,
+        "total_time": 24.84060788154602,
+        "input_tokens": 821,
+        "output_tokens": 15,
+        "cpu_percent": 199.21219512195162,
+        "cpu_avg": 199.21219512195162,
+        "cpu_max": 209.7,
+        "ram_gb": 21.027933446372426,
+        "memory_avg_gb": 21.027933446372426,
+        "memory_max_gb": 21.495311737060547,
+        "gpu_util": 0,
+        "gpu_memory_gb": 22.169189453125,
+        "cloud_calls": 0,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 15,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "prefill_time": 18.0834801197052,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 24.84060788154602,
+        "output_tokens": 15,
+        "cloud_calls": 0,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 15,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0,
+        "cloud_call_rate": 0.0
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 4.0,
+        "k": 5
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float16"
+      }
+    },
+    {
+      "file_id": "tx_emotion_00201000107",
+      "dataset": "secap",
+      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
+      "generated_text": "悲伤，声音颤抖/语调低沉，情绪激动难过。",
+      "bleu_score": 0.3942058093215873,
+      "cider_score": 0.753778361444409,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "default",
+      "latency_metrics": {
+        "ttft": 19.73008966445923,
+        "itps": 12660.123742826805,
+        "otps": 0.6243785137539843,
+        "oet": 24.02388882637024,
+        "total_time": 24.084272384643555,
+        "input_tokens": 759,
+        "output_tokens": 15,
+        "cpu_percent": 191.69647058823531,
+        "cpu_avg": 191.69647058823531,
+        "cpu_max": 209.7,
+        "ram_gb": 21.16458928084173,
+        "memory_avg_gb": 21.16458928084173,
+        "memory_max_gb": 21.50455093383789,
+        "gpu_util": 39,
+        "gpu_memory_gb": 22.659423828125,
+        "cloud_calls": 1,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 15,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "prefill_time": 16.367828369140625,
+        "cloud_call_rate": 0.25
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 24.084272384643555,
+        "output_tokens": 15,
+        "cloud_calls": 1,
+        "total_draft_tokens": 15,
+        "total_accepted_tokens": 15,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "cloud_call_rate": 0.25
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 4.0,
+        "k": 5
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 6.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float16"
+      }
+    }
+  ]
+}

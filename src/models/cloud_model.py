@@ -190,13 +190,9 @@ class CloudModel:
                         temperature=temperature,
                         top_p=top_p,
                         do_sample=True,
-                        repetition_penalty=1.15,  # Anti-repetition penalty
-                        no_repeat_ngram_size=3,   # Prevent 3-gram repetition
-                        typical_p=0.95,           # Typical sampling for better quality
-                        min_new_tokens=2,         # Minimum tokens to generate
                         pad_token_id=self.processor.tokenizer.eos_token_id,
-                        return_dict_in_generate=False,  # 减少内存开销
-                        output_scores=False,  # 不返回scores以节省内存
+                        return_dict_in_generate=False,
+                        output_scores=False,
                         return_audio=False
                     )
                 
@@ -391,7 +387,7 @@ class CloudModel:
             'attention_mask': full_mask,
         }
         
-        # 添加音频特征（如果存在）
+        # 添加音频特征
         has_audio = False
         if 'input_features' in context:
             inputs['input_features'] = context['input_features'].to(self.device)

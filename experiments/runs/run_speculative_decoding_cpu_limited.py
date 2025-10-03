@@ -150,12 +150,10 @@ class LimitedEdgeModel(EdgeModel):
         
         logger.info(f"Initializing LimitedEdgeModel with device={device}, dtype={dtype}")
         
-        # Apply hardware limits before loading model
-        if self.hardware_limiter:
-            self.hardware_limiter.apply_limits()
-        
-        # Initialize parent class
+        # Initialize parent class (model loading without strict memory limits)
         super().__init__(model_name=model_name, device=device, name=name, dtype=dtype)
+        
+        # Note: Memory limits are not applied after model loading to avoid instability
         
         # Set CPU-specific optimizations
         if device == "cpu":
@@ -321,26 +319,20 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
     """Get prompt template based on type and language"""
     if prompt_type == "default":
         if language == "chinese":
-            return """你是"音频情感描述器"。只做一件事：依据音频的可听线索，输出一条简洁的中文情感描述。
+            return """你是“音频情感描述器”。只做一件事：依据音频的可听线索，输出一条简洁的中文情感描述。
 
 【输出格式（必须严格遵守）】
-- 只输出一行中文短句；不加引号；不用任何前缀（如"示例/编号/输出/结果"）；不使用英文或"视频/文本"等字样；不提问、不寒暄、不解释过程。
-- 句式参考数据集中标注的写法：用"情感词 + 声学线索 + 态度倾向"的短语式表达，短语之间用逗号/顿号连接，必要时句号收尾。
-- 长度建议 15–40 个汉字；最多给出 1–3 种核心情感，不要过长枚举。
+- 只输出一行中文短句；不加引号；不用任何前缀（如“示例/编号/输出/结果”）；不使用英文或“视频/文本”等字样；不提问、不寒暄、不解释过程。
+- 句式写法：用“情感词 + 声学线索 + 态度倾向”的描述性短语式表达进行输出。
+- **长度要求：8-16个汉字**。
 
-【风格词汇与表达偏好】
-- 情感词优先使用：悲伤/难过/委屈/愤怒/恼怒/不满/嫉妒/怨恨/开心/喜悦/兴奋/满足/幸福/惊讶/疑惑/好奇/焦虑/担忧/害怕/无奈/失望/平静/冷淡/自豪/骄傲/鄙视/轻蔑/尊重/真诚 等。
-- 声学线索优先使用：语调高扬/下降、语速快/慢、音量高/低、声音颤抖、断断续续、带哭腔、含笑意、停顿明显、铿锵有力、轻快、低沉/尖锐 等。
-- 生成风格贴近如下参考（仅作风格示意，勿原样照抄、勿输出"示例"二字）：伤心难过，声音颤抖，情绪激动失望。/ 嫉妒，不满，生出怨恨情绪。/ 心情喜悦无比，兴高采烈。/ 语气激动，语调愤怒，声音洪亮，怒不可遏。/ 声音断断续续，带哭腔，悲痛难抑。/ 语调高亢急促，铿锵有力，情绪激昂。/ 语调冷淡舒缓，情绪颓靡，不以为意。
-
-【判别与约束】
-- 严禁输出："无法判断情绪""请提供更多信息""好的/嗯"等对话式内容。
-- 如线索不充分，也要**就近选择最可能的情感**并给出至少一条声学线索；仅当音频为空/强噪声无法听清时，才允许输出：情绪不明显。
+- 严禁输出：“无法判断情绪”“请提供更多信息”“好的/嗯”等对话式内容。
+- 如线索不充分，也要**就近选择最可能的情感**并给出至少一条声学线索。
 - 不捏造具体人物/事件/语义内容，只依据声音特征与可听到的情绪状态作描述。
 
 【你的唯一任务】
 - 从音频中提取可听到的情绪与相关声学线索，按上述格式输出一条中文描述。
-- 只输出这"一行描述"，除此之外不要输出任何其他文字。"""
+- 只输出这“一行描述”，除此之外不要输出任何其他文字。"""
         elif language == "english":
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"
     elif prompt_type == "detailed":
@@ -476,7 +468,7 @@ def run_cpu_limited_speculative_decoding_experiment(
                 max_new_tokens=64  # Increased for better results
             )
             
-            # Calculate metrics
+            # Calculate traditional metrics
             bleu_score = metrics.compute_bleu([reference_caption], generated_text)
             cider_score = metrics.compute_cider([reference_caption], generated_text)
             
@@ -527,6 +519,7 @@ def run_cpu_limited_speculative_decoding_experiment(
                 logger.info(f"  Generated: {generated_text}")
                 logger.info(f"  BLEU: {bleu_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
+                logger.info(f"  BERTScore: Computing in batch...")
                 logger.info(f"  Cloud calls: {spec_metrics['cloud_calls']}")
                 logger.info(f"  Acceptance rate: {spec_metrics['acceptance_rate']:.3f}")
                 logger.info(f"  Cloud call rate: {spec_metrics['cloud_call_rate']:.3f}")
@@ -543,8 +536,37 @@ def run_cpu_limited_speculative_decoding_experiment(
     
     # Calculate overall metrics
     if results:
-        avg_bleu = sum(r['bleu_score'] for r in results) / len(results)
+        # Compute batch BERTScore with corpus-level IDF
+        logger.info("Computing BERTScore with corpus-level IDF...")
+        candidates = [r['generated_text'] for r in results]
+        references_list = [[r['reference_caption']] for r in results]
+        bertscore_results = metrics.compute_batch_bertscore(candidates, references_list, language=language)
+        
+        # Add BERTScore results to each result and log them
+        for i, result in enumerate(results):
+            result['bertscore_precision'] = bertscore_results[i]['bertscore_precision']
+            result['bertscore_recall'] = bertscore_results[i]['bertscore_recall']
+            result['bertscore_f1'] = bertscore_results[i]['bertscore_f1']
+            
+            # Log BERTScore for each sample
+            logger.info(f"Sample {i+1} BERTScore:")
+            logger.info(f"  Precision: {result['bertscore_precision']:.4f}")
+            logger.info(f"  Recall: {result['bertscore_recall']:.4f}")
+            logger.info(f"  F1: {result['bertscore_f1']:.4f}")
+        
+        # Calculate corpus-level BLEU with Chinese tokenization
+        import sacrebleu
+        hyps = [r['generated_text'] for r in results]
+        refs = [[r['reference_caption'] for r in results]]
+        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize='zh')
+        overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
+        
+        # Keep sentence-level averages for diagnostic purposes
+        avg_bleu_sentence = sum(r['bleu_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
+        avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
+        avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
+        avg_bertscore_f1 = sum(r['bertscore_f1'] for r in results) / len(results)
         
         # Extract detailed latency metrics
         detailed_latency_data = [r['latency_metrics'] for r in results if r['latency_metrics']]
@@ -584,8 +606,12 @@ def run_cpu_limited_speculative_decoding_experiment(
                 }
             },
             "metrics": {
-                "avg_bleu": avg_bleu,
+                "corpus_bleu_zh": overall_bleu,  # Corpus-level BLEU with Chinese tokenization
+                "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
                 "avg_cider": avg_cider,
+                "avg_bertscore_precision": avg_bertscore_precision,
+                "avg_bertscore_recall": avg_bertscore_recall,
+                "avg_bertscore_f1": avg_bertscore_f1,
                 "latency_metrics": latency_metrics,
                 "speculative_decoding_metrics": {
                     "total_time_mean": latency_metrics.get('total_time_mean', 0),
@@ -607,8 +633,12 @@ def run_cpu_limited_speculative_decoding_experiment(
             json.dump(overall_results, f, ensure_ascii=False, indent=2)
         
         logger.info(f"Results saved to: {output_file}")
-        logger.info(f"Average BLEU: {avg_bleu:.4f}")
+        logger.info(f"Corpus BLEU (Chinese tokenization): {overall_bleu:.4f}")
+        logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
+        logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
+        logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")
+        logger.info(f"Average BERTScore F1: {avg_bertscore_f1:.4f}")
         
         # Log speculative decoding metrics
         logger.info("Speculative Decoding Metrics:")
@@ -670,8 +700,8 @@ def main():
                        help="Number of draft tokens to generate")
     parser.add_argument("--max_cpu_cores", type=int, default=2, 
                        help="Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)")
-    parser.add_argument("--max_memory_gb", type=float, default=6.0, 
-                       help="Maximum memory for edge model (iPhone 15 Plus: 8GB total, reserve 2GB)")
+    parser.add_argument("--max_memory_gb", type=float, default=16.0, 
+                       help="Maximum memory for edge model (default: 16.0, increased for Qwen2.5-Omni-3B model)")
     
     args = parser.parse_args()
     

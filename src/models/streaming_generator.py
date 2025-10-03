@@ -93,6 +93,7 @@ class StreamingGenerator:
                 new_tokens = self.processor.tokenizer.encode(new_text, add_special_tokens=False)
                 token_count += len(new_tokens)
                 
+                
                 # Prepare metrics
                 metrics = {
                     'step_time': step_time,

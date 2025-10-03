@@ -317,7 +317,7 @@ python experiments/runs/run_edge_baseline_cpu_limited.py \
     --language chinese \
     --prompt_type default \
     --max_cpu_cores 2 \
-    --max_memory_gb 6.0
+    --max_memory_gb 16.0
 ```
 
 ### 硬件限制的Speculative Decoding测试
@@ -334,25 +334,145 @@ python experiments/runs/run_speculative_decoding_cpu_limited.py \
     --entropy_threshold 4.0 \
     --k 5 \
     --max_cpu_cores 2 \
-    --max_memory_gb 6.0
+    --max_memory_gb 16.0
+```
+
+## 🧪 三个关键测试对比
+
+### 测试1: Cloud-Only Baseline (GPU)
+```bash
+# 纯GPU Cloud模型测试 - 作为性能上限参考
+python experiments/runs/run_cloud_baseline.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name cloud_secap_chinese_test \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default
+```
+
+### 测试2: Edge-Only Baseline (CPU Limited)
+```bash
+# CPU限制的Edge模型测试 - 模拟真实设备性能
+python experiments/runs/run_edge_baseline_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name edge_cpu_limited_test \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --max_cpu_cores 2 \
+    --max_memory_gb 16.0
+```
+
+### 测试3: Speculative Decoding (CPU Edge + GPU Cloud)
+```bash
+# CPU Edge + GPU Cloud 混合推理测试
+python experiments/runs/run_speculative_decoding_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name speculative_decoding_cpu_limited_test \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --entropy_threshold 4.0 \
+    --k 5 \
+    --max_cpu_cores 2 \
+    --max_memory_gb 16.0
+```
+
+### 🔄 完整对比测试流程
+```bash
+# 步骤1: 运行Cloud Baseline (性能上限)
+echo "=== 运行Cloud Baseline ==="
+python experiments/runs/run_cloud_baseline.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name cloud_baseline_comparison \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default
+
+# 步骤2: 运行Edge CPU Limited (真实设备性能)
+echo "=== 运行Edge CPU Limited ==="
+python experiments/runs/run_edge_baseline_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name edge_cpu_limited_comparison \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --max_cpu_cores 2 \
+    --max_memory_gb 16.0
+
+# 步骤3: 运行Speculative Decoding (混合推理)
+echo "=== 运行Speculative Decoding ==="
+python experiments/runs/run_speculative_decoding_cpu_limited.py \
+    --dataset_path data/processed/secap/manifest.json \
+    --output_name speculative_decoding_comparison \
+    --max_samples 20 \
+    --verbose \
+    --caption_type audio_only \
+    --language chinese \
+    --prompt_type default \
+    --entropy_threshold 4.0 \
+    --k 5 \
+    --max_cpu_cores 2 \
+    --max_memory_gb 16.0
+
+echo "=== 所有测试完成 ==="
+echo "结果文件保存在 experiments/results/ 目录下"
 ```
 
 ### 硬件配置说明
 - **Edge端 (iPhone 15 Plus模拟)**:
   - CPU: 2个性能核心 (A17 Pro芯片)
-  - 内存: 6GB (总共8GB，预留2GB给系统)
+  - 内存: 16GB (Qwen2.5-Omni-3B模型需要更多内存)
   - 设备: CPU + float32精度
   - 存储: NVMe SSD
+  - **注意**: 内存限制主要用于监控，不会在模型加载后严格限制
 
 - **Cloud端 (G100 GPU)**:
   - GPU: G100 64GB显存
   - 设备: CUDA + float16精度
   - 高性能计算资源
 
+## 📊 测试结果分析
+
+### 关键指标对比
+运行三个测试后，您可以对比以下指标：
+
+#### 性能指标 (Latency Metrics)
+- **TTFT (Time To First Token)**: 首token生成时间
+- **OTPS (Output Tokens Per Second)**: 输出token速度
+- **Total Time**: 总生成时间
+- **CPU Usage**: CPU使用率
+- **GPU Usage**: GPU使用率 (仅Cloud和Speculative Decoding)
+
+#### 质量指标 (Quality Metrics)
+- **BLEU Score**: 词面重叠度
+- **CIDEr Score**: 语义相似度
+- **BERTScore**: 语义相似度 (Precision/Recall/F1)
+
+#### Speculative Decoding特有指标
+- **Cloud Call Rate**: Cloud模型调用频率
+- **Acceptance Rate**: Edge token接受率
+- **Correction Rate**: Cloud纠正率
+
+### 预期结果分析
+1. **Cloud Baseline**: 最高质量，最快速度，但需要GPU资源
+2. **Edge CPU Limited**: 较低质量，较慢速度，但节省资源
+3. **Speculative Decoding**: 质量接近Cloud，速度接近Edge，资源使用平衡
+
 ## 🎯 推荐运行顺序
 
 1. **快速验证**：先运行3个样本的快速测试，确保代码正常
-2. **硬件对比**：对比CPU-limited vs GPU baseline性能
+2. **三个对比测试**：运行上述三个关键测试进行对比
 3. **参数调优**：使用20-50个样本测试不同参数组合
 4. **完整评估**：使用100+样本进行完整性能评估
 5. **结果分析**：对比三个方法的latency metrics和quality metrics

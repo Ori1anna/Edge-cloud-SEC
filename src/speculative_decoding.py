@@ -224,6 +224,70 @@ class SimpleSpeculativeDecoding:
             max_generation_time = 300.0  # 5 minutes maximum
             generation_start_time = time.time()
             
+            # Start hardware monitoring (similar to Edge Only approach)
+            monitor_data = {
+                'cpu_samples': [], 
+                'memory_samples': [],
+                'gpu_util_samples': [],
+                'gpu_memory_gb': 0.0
+            }
+            monitor_thread = None
+            
+            def monitor_hardware():
+                """Monitor hardware usage during speculative decoding generation"""
+                start_time = time.time()
+                while time.time() - start_time < 600:  # Monitor for up to 10 minutes
+                    try:
+                        import psutil
+                        process = psutil.Process()
+                        
+                        # CPU usage - need to call twice to get accurate reading
+                        cpu_percent = process.cpu_percent()
+                        if cpu_percent == 0.0:
+                            # If first call returns 0, try with a small interval
+                            cpu_percent = process.cpu_percent(interval=0.1)
+                        
+                        # Fallback to system CPU usage if process CPU is still 0
+                        if cpu_percent == 0.0:
+                            system_cpu = psutil.cpu_percent(interval=0.1)
+                            cpu_percent = min(system_cpu * 0.1, 100.0)  # Estimate process usage as 10% of system
+                        
+                        # Memory usage
+                        memory_info = process.memory_info()
+                        memory_gb = memory_info.rss / (1024**3)
+                        
+                        monitor_data['cpu_samples'].append(max(cpu_percent, 0.1))  # Ensure minimum 0.1% to avoid 0 values
+                        monitor_data['memory_samples'].append(memory_gb)
+                        
+                        # Monitor GPU usage (for Cloud model usage)
+                        try:
+                            import pynvml
+                            pynvml.nvmlInit()
+                            device_count = pynvml.nvmlDeviceGetCount()
+                            if device_count > 0:
+                                handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                                gpu_util_info = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                                gpu_memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                                monitor_data['gpu_util_samples'].append(gpu_util_info.gpu)
+                                monitor_data['gpu_memory_gb'] = gpu_memory_info.used / (1024 ** 3)
+                        except Exception:
+                            # GPU monitoring not available, use default values
+                            monitor_data['gpu_util_samples'].append(0.0)
+                            monitor_data['gpu_memory_gb'] = 0.0
+                        
+                    except Exception as e:
+                        logger.debug(f"Hardware monitoring error: {e}")
+                        # Continue monitoring even if one sample fails
+                    
+                    time.sleep(0.1)  # Sample every 100ms
+            
+            # Start hardware monitoring thread
+            import threading
+            monitor_thread = threading.Thread(target=monitor_hardware)
+            monitor_thread.daemon = True
+            monitor_thread.start()
+            logger.debug("Hardware monitoring thread started")
+            
             # Step 0: Perform multimodal prefill to get KV cache
             logger.info("Performing multimodal prefill for efficient incremental generation...")
             prefill_start_time = time.time()
@@ -456,32 +520,40 @@ class SimpleSpeculativeDecoding:
             input_tokens = len(context['input_ids'][0])
             output_tokens = len(generated_tokens)
             
-            # Get CPU and GPU usage
+            # Get CPU and GPU usage from monitoring data (similar to Edge Only approach)
             try:
-                process = psutil.Process()
-                cpu_percent = process.cpu_percent(interval=0.5)
-                if cpu_percent == 0.0:
-                    system_cpu = psutil.cpu_percent(interval=0.2)
-                    cpu_percent = min(system_cpu * 0.1, 100.0)
-                if cpu_percent == 0.0:
+                # Calculate average CPU and memory usage from monitoring samples
+                if monitor_data['cpu_samples']:
+                    cpu_percent = sum(monitor_data['cpu_samples']) / len(monitor_data['cpu_samples'])
+                    ram_gb = sum(monitor_data['memory_samples']) / len(monitor_data['memory_samples'])
+                    
+                    # Calculate max values for additional metrics
+                    cpu_max = max(monitor_data['cpu_samples'])
+                    memory_max_gb = max(monitor_data['memory_samples'])
+                else:
+                    # Fallback if no monitoring data available
                     cpu_percent = 0.1
-                
-                memory_info = process.memory_info()
-                ram_gb = memory_info.rss / (1024 ** 3)
+                    ram_gb = 0.0
+                    cpu_max = 0.1
+                    memory_max_gb = 0.0
                 
                 # GPU usage from monitoring
                 gpu_util = 0.0
                 gpu_memory_gb = 0.0
-                if gpu_monitor_data and gpu_monitor_data.get('gpu_util_samples'):
-                    gpu_util_samples = gpu_monitor_data['gpu_util_samples']
-                    gpu_util = max(gpu_util_samples) if gpu_util_samples else 0.0
-                    gpu_memory_gb = gpu_monitor_data.get('gpu_memory_gb', 0.0)
+                if monitor_data['gpu_util_samples']:
+                    gpu_util = max(monitor_data['gpu_util_samples'])
+                    gpu_memory_gb = monitor_data['gpu_memory_gb']
+                    
+                logger.debug(f"Hardware monitoring completed: CPU avg={cpu_percent:.1f}%, RAM avg={ram_gb:.2f}GB, GPU max={gpu_util:.1f}%")
+                    
             except Exception as e:
-                logger.warning(f"Failed to get CPU/GPU usage: {e}")
-                cpu_percent = 0.0
+                logger.warning(f"Failed to process hardware monitoring data: {e}")
+                cpu_percent = 0.1
                 ram_gb = 0.0
                 gpu_util = 0.0
                 gpu_memory_gb = 0.0
+                cpu_max = 0.1
+                memory_max_gb = 0.0
             
             # Calculate latency metrics (compatible with baseline format)
             # Time-to-First-Token (TTFT): Time from generation start to first token acceptance
@@ -515,8 +587,14 @@ class SimpleSpeculativeDecoding:
                 'total_time': total_time,
                 'input_tokens': input_tokens,
                 'output_tokens': output_tokens,
+                
+                # Hardware monitoring metrics (similar to Edge Only)
                 'cpu_percent': cpu_percent,
+                'cpu_avg': cpu_percent,  # Average CPU usage
+                'cpu_max': cpu_max,      # Maximum CPU usage
                 'ram_gb': ram_gb,
+                'memory_avg_gb': ram_gb,  # Average memory usage
+                'memory_max_gb': memory_max_gb,  # Maximum memory usage
                 'gpu_util': gpu_util,
                 'gpu_memory_gb': gpu_memory_gb,
                 
@@ -824,7 +902,7 @@ class SimpleSpeculativeDecoding:
         """
         try:
             with torch.no_grad():
-                # Use Edge model to generate k tokens with anti-repetition parameters
+                # Use Edge model to generate k tokens
                 generation_kwargs = {
                     'input_ids': context['input_ids'],
                     'attention_mask': context['attention_mask'],
@@ -832,10 +910,6 @@ class SimpleSpeculativeDecoding:
                     'temperature': 0.7,
                     'top_p': 0.9,
                     'do_sample': True,
-                    'repetition_penalty': 1.15,  # Anti-repetition penalty
-                    'no_repeat_ngram_size': 3,   # Prevent 3-gram repetition
-                    'typical_p': 0.95,           # Typical sampling for better quality
-                    'min_new_tokens': 2,         # Minimum tokens to generate
                     'pad_token_id': self.edge_model.processor.tokenizer.eos_token_id,
                     'return_dict_in_generate': True,
                     'output_scores': True,
