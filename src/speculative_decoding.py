@@ -133,6 +133,19 @@ class SimpleSpeculativeDecoding:
         
         return False
     
+    def _is_sentence_end_token(self, token_id: int) -> bool:
+        """Check if token represents sentence-ending punctuation (for N-sentence stopping)"""
+        try:
+            # Get token text to check if it's sentence-ending punctuation
+            token_text = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
+            
+            # Check for Chinese and English sentence endings (only proper sentence endings)
+            sentence_endings = ['。', '.']  # Only count proper sentence endings, not exclamations or questions
+            return token_text in sentence_endings
+        except:
+            # If decoding fails, return False
+            return False
+    
     def _decode_tokens(self, tokens: List[int]) -> str:
         """Decode tokens to text"""
         try:
@@ -295,6 +308,18 @@ class SimpleSpeculativeDecoding:
             prefill_time = time.time() - prefill_start_time
             logger.info(f"Multimodal prefill completed in {prefill_time:.3f}s")
             
+            # Add stopping criteria (same as baseline) for consistent stopping behavior
+            from src.models.stopping_criteria import create_stopping_criteria
+            stopping_criteria = create_stopping_criteria(
+                self.edge_model.processor.tokenizer,
+                n_sentences=2,  # Allow 2 sentences for detailed outputs
+                sentence_end_chars=("。", "."),  # Only count proper sentence endings
+                min_new_tokens=32,  # Minimum tokens before allowing stop
+                prompt_type="detailed"  # Adjust based on prompt type
+            )
+            current_context['stopping_criteria'] = stopping_criteria
+            logger.info("Added stopping criteria for consistent stopping behavior")
+            
             # Main speculative decoding loop with incremental generation
             while len(generated_tokens) < max_new_tokens:
                 # Check for timeout
@@ -317,6 +342,31 @@ class SimpleSpeculativeDecoding:
                     if 'past_key_values' in current_context:
                         logger.info("Using incremental generation with KV cache")
                         draft_tokens, draft_logits = self._generate_draft_tokens_incremental(current_context, self.k)
+                        
+                        # Enhanced cross-block cycle detection: combine context + draft tokens
+                        if len(generated_tokens) >= 8 and len(draft_tokens) >= 4:
+                            # Include recent context tokens for cross-block detection
+                            context_recent = []
+                            if current_context['input_ids'].shape[1] > 0:
+                                # Take last 16 tokens from context for cross-block analysis
+                                context_recent = current_context['input_ids'][0, -16:].tolist()
+                            
+                            # Combine context recent + generated tokens for full pattern analysis
+                            full_sequence = context_recent + generated_tokens
+                            
+                            # Check for repeating patterns in the full sequence
+                            if len(full_sequence) >= 8:
+                                last_8_tokens = full_sequence[-8:]
+                                # Pattern detection: check for 4-token cycles
+                                if (last_8_tokens[:4] == last_8_tokens[4:] and 
+                                    len(set(last_8_tokens[:4])) <= 3):  # Pattern with <= 3 unique tokens
+                                    logger.warning(f"Detected cross-block repeating pattern: {last_8_tokens}")
+                                    logger.warning("Context tokens: " + str(context_recent[-8:]) if context_recent else "No context")
+                                    logger.warning("Generated tokens: " + str(generated_tokens[-8:]))
+                                    logger.warning("Forcing cloud verification to break cycle")
+                                    # Force cloud verification instead of breaking
+                                    max_uncertainty = 999.0  # Set very high to force cloud call
+                                    break
                     else:
                         # Fallback to legacy method if no KV cache
                         logger.warning("No KV cache available, falling back to legacy generation")
@@ -418,6 +468,13 @@ class SimpleSpeculativeDecoding:
                             current_context['attention_mask'] = current_context['attention_mask'][:, :ids_before_draft]
                             logger.info(f"Rolled back input_ids to length {ids_before_draft}")
                         
+                        # CRITICAL FIX: Also rollback last_token_id to prevent repeated generation from same position
+                        if 'last_token_id' in current_context and ids_before_draft > 0:
+                            # Set last_token_id to the last token before draft generation
+                            last_valid_token = current_context['input_ids'][0, ids_before_draft - 1:ids_before_draft].clone()
+                            current_context['last_token_id'] = last_valid_token.unsqueeze(0)  # Shape: [1, 1]
+                            logger.info(f"Rolled back last_token_id to token {last_valid_token.item()}")
+                        
                         # Step 2: Advance KV cache with only accepted tokens + correction token
                         tokens_to_advance = accepted_tokens + ([correction_token] if correction_token is not None else [])
                         if kv_before_draft is not None and tokens_to_advance:
@@ -472,11 +529,23 @@ class SimpleSpeculativeDecoding:
                 
                 # Check for EOS token or other stop conditions (if not already set)
                 if not should_stop:
-                    for token in generated_tokens[-5:]:  # Check last 5 tokens
+                    # Use proper token-level stopping instead of string matching
+                    for token in generated_tokens[-3:]:  # Check last 3 tokens
                         if self._is_eos_token(token):
                             logger.info(f"Stop condition met (token {token}), stopping generation")
                             should_stop = True
                             break
+                    
+                    # Check for sentence-ending punctuation (N-sentence stopping strategy)
+                    if len(generated_tokens) > 32:  # Only after minimum tokens
+                        sentence_count = 0
+                        for token in generated_tokens:
+                            if self._is_sentence_end_token(token):
+                                sentence_count += 1
+                                if sentence_count >= 2:  # Stop after 2 sentences
+                                    logger.info(f"Stop condition met: {sentence_count} sentences completed")
+                                    should_stop = True
+                                    break
                 
                 if should_stop:
                     break
@@ -484,22 +553,17 @@ class SimpleSpeculativeDecoding:
                 # Minimal quality control: only stop on truly universal issues
                 if len(generated_tokens) > 15:  # After generating some tokens
                     try:
-                        current_text = self._decode_tokens(generated_tokens)
-                        
-                        # Stop only on model-specific stop tokens (universal across all models)
-                        if any(pattern in current_text for pattern in ['<|endoftext|>', '<|im_end|>', '<|end|>']):
-                            logger.info(f"Stopping due to model-specific stop tokens: {current_text}")
-                            break
-                            
                         # Stop if text is extremely long (prevent runaway generation)
-                        if len(current_text) > 1000:  # Very generous limit for any dataset
-                            logger.info(f"Stopping due to excessive text length: {len(current_text)} characters")
+                        if len(generated_tokens) > 120:  # Token-level limit for detailed Chinese (2 sentences)
+                            logger.info(f"Stopping due to excessive token length: {len(generated_tokens)} tokens")
                             break
                             
-                        # Stop if text is extremely repetitive (same token repeated many times)
-                        if len(set(generated_tokens[-25:])) < 2 and len(generated_tokens) > 25:  # Very strict repetition check
-                            logger.info(f"Stopping due to extreme repetition: {generated_tokens[-25:]}")
-                            break
+                        # Check for template leakage (Human, User, etc.) - only check for obvious issues
+                        if len(generated_tokens) > 20:
+                            current_text = self._decode_tokens(generated_tokens[-20:])
+                            if any(template in current_text for template in ['Human', 'User', 'Assistant', 'System']):
+                                logger.info(f"Stopping due to template leakage: {current_text}")
+                                break
                             
                     except Exception as e:
                         logger.debug(f"Error checking generated text quality: {e}")
@@ -663,7 +727,7 @@ class SimpleSpeculativeDecoding:
                     logger.debug(f"Past_key_values length: {len(past_key_values)}")
                 
                 # Store the last token position for incremental generation
-                last_token_id = context['input_ids'][0, -1:].clone()
+                last_token_id = context['input_ids'][0, -1:].clone().unsqueeze(0)  # Shape: [1, 1]
                 
                 prefill_time = time.time() - prefill_start_time
                 logger.info(f"Edge prefill completed in {prefill_time:.3f}s")
@@ -704,11 +768,11 @@ class SimpleSpeculativeDecoding:
                 all_logits = []
                 current_past_key_values = context.get('past_key_values')
                 
-                # Start from the last token of the input sequence
-                # For incremental generation, we only need the last token
-                current_input_ids = context['input_ids'][0, -1:].unsqueeze(0)  # Shape: [1, 1]
-                
-                logger.debug(f"Starting incremental generation from token: {current_input_ids.item()}")
+                # CRITICAL FIX: Always start from the actual last token in input_ids
+                # This ensures we don't repeat from stale last_token_id
+                # The input_ids should already contain all accepted tokens from previous iterations
+                current_input_ids = context['input_ids'][:, -1:].contiguous()  # Shape: [1, 1]
+                logger.debug(f"Starting incremental generation from last token in input_ids: {current_input_ids.item()}")
                 
                 # Generate k tokens incrementally
                 for step in range(k):
@@ -719,6 +783,12 @@ class SimpleSpeculativeDecoding:
                         'use_cache': True,
                         'return_dict': True
                     }
+                    
+                    # Add attention_mask for consistent context length handling
+                    if 'attention_mask' in context:
+                        # Use the current attention_mask length to ensure consistency
+                        current_attention_mask = torch.ones(1, 1, device=current_input_ids.device)
+                        step_inputs['attention_mask'] = current_attention_mask
                     
                     # CRITICAL: Pass audio features on the first step to maintain multimodal context
                     if step == 0:
@@ -731,7 +801,9 @@ class SimpleSpeculativeDecoding:
                         logger.debug(f"Step {step+1}: Using KV cache only (audio context preserved)")
                     
                     # Debug: check input shapes
-                    logger.debug(f"Step {step+1}: input_ids={current_input_ids.item()}, past_key_values present: {current_past_key_values is not None}")
+                    logger.debug(f"Step {step+1}: input_ids shape={current_input_ids.shape}, value={current_input_ids.item()}")
+                    logger.debug(f"Step {step+1}: past_key_values present: {current_past_key_values is not None}")
+                    logger.debug(f"Step {step+1}: step_inputs keys: {list(step_inputs.keys())}")
                     
                     # Call thinker for incremental generation
                     outputs = self.edge_model.model.thinker(**step_inputs)
@@ -740,46 +812,97 @@ class SimpleSpeculativeDecoding:
                     logits = outputs.logits[0, -1, :].float()  # Shape: [vocab_size], convert to float32
                     all_logits.append(logits)
                     
-                    # Sample next token with enhanced anti-repetition logic
-                    # Apply temperature and repetition penalty
-                    logits_temp = logits / 0.7  # Temperature scaling
+                    # Apply baseline-level anti-repetition constraints
+                    logits_temp = logits.clone() / 0.7  # Temperature scaling
                     
-                    # Enhanced repetition penalty: reduce probability of recently generated tokens
-                    if len(draft_tokens) > 0:
-                        recent_tokens = draft_tokens[-5:]  # Look at last 5 tokens
-                        for token_id in recent_tokens:
+                    # 1. Repetition penalty (like baseline): penalize recently generated tokens
+                    recent_window_size = 64  # Look at recent 64 tokens from context + current draft
+                    recent_tokens = []
+                    
+                    # Include recent tokens from context
+                    if context['input_ids'].shape[1] > 0:
+                        context_recent = context['input_ids'][0, -min(recent_window_size, context['input_ids'].shape[1]):]
+                        recent_tokens.extend(context_recent.tolist())
+                    
+                    # Include current draft tokens
+                    recent_tokens.extend(draft_tokens)
+                    
+                    # Apply repetition penalty (HF style: positive/negative branch)
+                    if recent_tokens:
+                        recent_tensor = torch.tensor(recent_tokens, device=logits_temp.device)
+                        unique_recent = torch.unique(recent_tensor)
+                        repetition_penalty = 1.1
+                        for token_id in unique_recent:
                             if logits_temp[token_id] > 0:
-                                logits_temp[token_id] = logits_temp[token_id] / 1.5  # Stronger penalty
+                                logits_temp[token_id] /= repetition_penalty
+                            else:
+                                logits_temp[token_id] *= repetition_penalty
                     
-                    # Additional penalty for common problematic tokens
-                    problematic_tokens = [
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('请'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('好'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('的'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('调'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('语'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('声'),
-                        self.edge_model.processor.tokenizer.convert_tokens_to_ids('，'),
-                    ]
+                    # Apply presence penalty (like baseline) for better consistency
+                    presence_penalty = 0.1
+                    if recent_tokens:
+                        # Count frequency of each token
+                        from collections import Counter
+                        token_counts = Counter(recent_tokens)
+                        for token_id, count in token_counts.items():
+                            # Apply presence penalty proportional to frequency
+                            penalty_factor = 1.0 + presence_penalty * count
+                            logits_temp[token_id] -= penalty_factor
                     
-                    for token_id in problematic_tokens:
-                        if token_id is not None and token_id < logits_temp.size(0) and logits_temp[token_id] > 0:
-                            logits_temp[token_id] = logits_temp[token_id] / 2.0  # Heavy penalty for problematic tokens
+                    # 2. True no-repeat 2-gram constraint (like baseline no_repeat_ngram_size=2)
+                    def build_bigrams_ban(history):
+                        """Build banned next tokens for 2-gram repetition"""
+                        banned = {}
+                        for a, b in zip(history[:-1], history[1:]):
+                            banned.setdefault(a, set()).add(b)
+                        return banned
                     
-                    # Apply top-p filtering
-                    sorted_logits, sorted_indices = torch.sort(logits_temp, descending=True)
-                    cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
-                    sorted_indices_to_remove = cumulative_probs > 0.9  # top_p=0.9
-                    sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-                    sorted_indices_to_remove[..., 0] = 0
+                    # Combine context and current draft for full history
+                    full_history = (context['input_ids'][0].tolist() + draft_tokens)
+                    if len(full_history) >= 2:
+                        banned_map = build_bigrams_ban(full_history)
+                        prev_token = full_history[-1]
+                        if prev_token in banned_map and banned_map[prev_token]:
+                            # Ban all tokens that would complete existing 2-grams
+                            banned_tokens = list(banned_map[prev_token])
+                            logits_temp[banned_tokens] = -float('inf')
+                            logger.debug(f"Banned {len(banned_tokens)} tokens to prevent 2-gram repetition")
                     
-                    indices_to_remove = sorted_indices[sorted_indices_to_remove]
-                    logits_temp[indices_to_remove] = float('-inf')
+                    # 3. Use baseline-like decoding with enhanced constraints
+                    # Apply temperature scaling for consistency with baseline
+                    temperature = 0.7
+                    logits_scaled = logits_temp / temperature
                     
-                    # Sample from filtered distribution
-                    probs = torch.softmax(logits_temp, dim=-1)
-                    next_token = torch.multinomial(probs, 1).item()
+                    # Use greedy selection (like baseline do_sample=False)
+                    next_token = torch.argmax(logits_scaled, dim=-1).item()
+                    
+                    # 4. Additional cycle detection for current draft block
+                    if len(draft_tokens) >= 4:
+                        recent_draft = draft_tokens[-4:]
+                        if recent_draft.count(next_token) >= 2:  # Token appears too frequently in draft
+                            # Use top-k sampling to break the cycle (fallback)
+                            top_k = 5
+                            top_k_logits, top_k_indices = torch.topk(logits_temp, top_k)
+                            probs = torch.softmax(top_k_logits / 0.8, dim=-1)
+                            next_token = top_k_indices[torch.multinomial(probs, 1)].item()
+                            logger.debug(f"Draft cycle detected, using top-{top_k} sampling: {next_token}")
+                    
                     draft_tokens.append(next_token)
+                    
+                    # 5. Check stopping criteria (like baseline)
+                    # Combine context + current draft to check for sentence endings
+                    if 'stopping_criteria' in context and context['stopping_criteria'] is not None:
+                        # Create input_ids tensor for stopping criteria check
+                        full_sequence = torch.cat([
+                            context['input_ids'][0], 
+                            torch.tensor(draft_tokens, device=context['input_ids'].device)
+                        ]).unsqueeze(0)
+                        
+                        # Check if we should stop (same logic as baseline)
+                        should_stop = any(criterion(full_sequence, None) for criterion in context['stopping_criteria'])
+                        if should_stop:
+                            logger.info(f"Stopping criteria met at step {step+1}, ending draft generation")
+                            break
                     
                     # Update for next iteration - keep the KV cache!
                     current_past_key_values = outputs.past_key_values
@@ -808,7 +931,7 @@ class SimpleSpeculativeDecoding:
 
     def _advance_kv_cache(self, kv_cache, tokens: list, device) -> tuple:
         """
-        Advance KV cache with new tokens using incremental generation
+        Advance KV cache with new tokens using proper incremental generation
         
         Args:
             kv_cache: Current KV cache (past_key_values)
@@ -822,25 +945,30 @@ class SimpleSpeculativeDecoding:
             if not tokens:
                 return kv_cache
             
+            # CRITICAL FIX: Advance KV cache token by token using proper incremental generation
+            # This is the correct way to advance KV cache - one token at a time
             current_kv = kv_cache
             
             with torch.no_grad():
+                # Advance KV cache token by token
                 for i, token in enumerate(tokens):
-                    # Prepare input for this step - each token as a single element
-                    current_input_ids = torch.tensor([[token]], device=device)
+                    # Prepare input for single token
+                    token_tensor = torch.tensor([[token]], device=device)  # Shape: [1, 1]
                     
                     step_inputs = {
-                        'input_ids': current_input_ids,
+                        'input_ids': token_tensor,
                         'past_key_values': current_kv,
                         'use_cache': True,
                         'return_dict': True
                     }
                     
-                    # Advance KV cache one token at a time
+                    # Single forward pass for one token
                     outputs = self.edge_model.model.thinker(**step_inputs)
                     current_kv = outputs.past_key_values
                     
-                    logger.debug(f"KV advance step {i+1}: token {token}")
+                    logger.debug(f"KV cache advanced with token {token} ({i+1}/{len(tokens)})")
+                
+                logger.debug(f"KV cache advanced with {len(tokens)} tokens token by token")
             
             logger.info(f"Successfully advanced KV cache with {len(tokens)} tokens")
             return current_kv
@@ -849,6 +977,7 @@ class SimpleSpeculativeDecoding:
             logger.error(f"Error advancing KV cache: {e}")
             import traceback
             traceback.print_exc()
+            # Return original cache if advancement fails
             return kv_cache
 
     def _update_context_incremental(self, context: dict, new_tokens: list) -> dict:
@@ -860,14 +989,14 @@ class SimpleSpeculativeDecoding:
             new_tokens: List of new tokens to add
             
         Returns:
-            Updated context
+            Updated context with properly synchronized KV cache
         """
         try:
             if not new_tokens:
                 return context
             
             # CRITICAL: Create a copy to preserve all multimodal features
-            new_context = context.copy()  # Preserve input_features, feature_attention_mask, past_key_values, etc.
+            new_context = context.copy()  # Preserve input_features, feature_attention_mask, etc.
             
             # Update input_ids and attention_mask
             new_tokens_tensor = torch.tensor([new_tokens], device=context['input_ids'].device)
@@ -877,11 +1006,16 @@ class SimpleSpeculativeDecoding:
                 torch.ones_like(new_tokens_tensor)
             ], dim=1)
             
-            # Update last_token_id for next incremental generation
-            new_context['last_token_id'] = new_tokens_tensor[0, -1:].unsqueeze(0)
+            # CRITICAL FIX: DO NOT advance KV cache here to prevent double-advance
+            # KV cache is already advanced in _generate_draft_tokens_incremental
+            # and in the correction path. Advancing here would cause KV to be ahead
+            # of input_ids, leading to ABAB repetition patterns.
+            logger.debug(f"Keeping existing KV cache (no double-advance)")
             
-            # Note: KV cache management is handled separately in draft generation and correction logic
-            logger.debug(f"Updated context with {len(new_tokens)} new tokens")
+            # Update last_token_id for next incremental generation
+            new_context['last_token_id'] = new_tokens_tensor[0, -1:].unsqueeze(0)  # Shape: [1, 1]
+            
+            logger.debug(f"Updated context with {len(new_tokens)} new tokens and synchronized KV cache")
             
             return new_context
             
@@ -902,14 +1036,16 @@ class SimpleSpeculativeDecoding:
         """
         try:
             with torch.no_grad():
-                # Use Edge model to generate k tokens
+                # Use Edge model to generate k tokens with deterministic generation
                 generation_kwargs = {
                     'input_ids': context['input_ids'],
                     'attention_mask': context['attention_mask'],
                     'max_new_tokens': k,
                     'temperature': 0.7,
                     'top_p': 0.9,
-                    'do_sample': True,
+                    'do_sample': False,  # Use deterministic generation
+                    'no_repeat_ngram_size': 2,  # Prevent 2-gram repetition
+                    'repetition_penalty': 1.05,  # Light repetition penalty
                     'pad_token_id': self.edge_model.processor.tokenizer.eos_token_id,
                     'return_dict_in_generate': True,
                     'output_scores': True,

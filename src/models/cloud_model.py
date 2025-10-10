@@ -58,7 +58,8 @@ class CloudModel:
                               prompt: str = "Based on this audio, describe the emotional state of the speaker in Chinese.",
                               max_new_tokens: int = 32,
                               temperature: float = 0.7,
-                              top_p: float = 0.9) -> tuple[str, dict]:
+                              top_p: float = 0.9,
+                              prompt_type: str = "default") -> tuple[str, dict]:
         """
         Generate text independently using cloud model with detailed latency metrics
         
@@ -68,6 +69,7 @@ class CloudModel:
             max_new_tokens: Maximum number of tokens to generate
             temperature: Sampling temperature
             top_p: Top-p sampling parameter
+            prompt_type: Type of prompt ("default", "detailed", "concise")
             
         Returns:
             Tuple of (generated_text, latency_metrics)
@@ -106,6 +108,26 @@ class CloudModel:
                 padding=True
             )
             inputs = inputs.to(self.device).to(self.model.dtype)
+            
+            # Set generation parameters with deterministic output (no sampling)
+            # Use greedy decoding for consistent, non-conversational output
+            do_sample = False  # Disable sampling, use greedy/beam search
+            adjusted_temperature = 1.0  # Temperature ignored when do_sample=False
+            adjusted_top_p = 1.0  # Top-p ignored when do_sample=False
+            no_repeat_ngram_size = 2  # Prevent 2-gram repetition
+            repetition_penalty = 1.05  # Light repetition penalty
+            
+            # Create proper stopping criteria based on token IDs with flexible sentence counting
+            from .stopping_criteria import create_stopping_criteria
+            stopping_criteria = create_stopping_criteria(
+                self.processor.tokenizer,
+                n_sentences=2,  # Allow 2 sentences for detailed outputs
+                sentence_end_chars=("。", "."),  # Only count proper sentence endings
+                min_new_tokens=32,  # Minimum tokens before allowing stop
+                prompt_type=prompt_type  # Adjust based on prompt type
+            )
+            
+            logger.debug(f"Using deterministic generation: do_sample={do_sample}, no_repeat_ngram_size={no_repeat_ngram_size}, repetition_penalty={repetition_penalty}")
             
             # Record time before generation (for input processing)
             input_end_time = time.time()
@@ -161,7 +183,8 @@ class CloudModel:
                 
                 # Generate with streaming for accurate TTFT
                 generated_text, streaming_metrics = streamer.generate_with_accurate_metrics(
-                    inputs, max_new_tokens, temperature, top_p
+                    inputs, max_new_tokens, adjusted_temperature, adjusted_top_p, 
+                    do_sample, no_repeat_ngram_size, repetition_penalty
                 )
                 
                 output_token_count = streaming_metrics.get('output_tokens', 0)
@@ -187,9 +210,12 @@ class CloudModel:
                     outputs = self.model.generate(
                         **inputs,
                         max_new_tokens=max_new_tokens,
-                        temperature=temperature,
-                        top_p=top_p,
-                        do_sample=True,
+                        temperature=adjusted_temperature,
+                        top_p=adjusted_top_p,
+                        do_sample=do_sample,
+                        no_repeat_ngram_size=no_repeat_ngram_size,
+                        repetition_penalty=repetition_penalty,
+                        stopping_criteria=stopping_criteria,  # Use proper stopping criteria
                         pad_token_id=self.processor.tokenizer.eos_token_id,
                         return_dict_in_generate=False,
                         output_scores=False,
@@ -414,7 +440,7 @@ class CloudModel:
         probabilities = []
         
         # 纯使用排名阈值，不使用概率阈值
-        rank_threshold = 20  # 接受排名前20的token
+        rank_threshold = 20 # 接受排名前3的token (更严格的验证)
         
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置

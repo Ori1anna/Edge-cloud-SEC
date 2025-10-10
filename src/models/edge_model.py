@@ -202,7 +202,9 @@ class EdgeModel:
                         max_new_tokens=max_new_tokens,
                         temperature=temperature,
                         top_p=top_p,
-                        do_sample=True,
+                        do_sample=False,  # Use deterministic generation
+                        no_repeat_ngram_size=2,  # Prevent 2-gram repetition
+                        repetition_penalty=1.05,  # Light repetition penalty
                         pad_token_id=self.processor.tokenizer.eos_token_id,
                         return_dict_in_generate=False,
                         output_scores=False,
@@ -761,7 +763,10 @@ class EdgeModel:
             
             # Generate with streaming
             generated_text, streaming_metrics = streamer.generate_with_accurate_metrics(
-                inputs, max_new_tokens, temperature, top_p
+                inputs, max_new_tokens, temperature, top_p,
+                do_sample=False,  # Use deterministic generation
+                no_repeat_ngram_size=2,  # Prevent 2-gram repetition
+                repetition_penalty=1.05  # Light repetition penalty
             )
             
             return generated_text, streaming_metrics
@@ -775,7 +780,9 @@ class EdgeModel:
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     top_p=top_p,
-                    do_sample=True,
+                    do_sample=False,  # Use deterministic generation
+                    no_repeat_ngram_size=2,  # Prevent 2-gram repetition
+                    repetition_penalty=1.05,  # Light repetition penalty
                     pad_token_id=self.processor.tokenizer.eos_token_id,
                     return_dict_in_generate=False,
                     output_scores=False,

@@ -62,34 +62,47 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
     """Get prompt template based on type and language"""
     if prompt_type == "default":
         if language == "chinese":
-            return """你是“音频情感描述器”。只做一件事：依据音频的可听线索，输出一条简洁的中文情感描述。
+#             return """你是“音频情感描述器”。只做一件事：依据音频的可听线索，输出一条简洁的中文情感描述。
 
-【输出格式（必须严格遵守）】
-- 只输出一行中文短句；不加引号；不用任何前缀（如“示例/编号/输出/结果”）；不使用英文或“视频/文本”等字样；不提问、不寒暄、不解释过程。
-- 句式写法：用“情感词 + 声学线索 + 态度倾向”的描述性短语式表达进行输出。
-- 长度建议 15–40 个汉字。
+# 【输出格式（必须严格遵守）】
+# - 只输出一行中文短句；不加引号；不用任何前缀（如“示例/编号/输出/结果”）；不使用英文或“视频/文本”等字样；不提问、不寒暄、不解释过程。
+# - 句式写法：用“情感词 + 声学线索 + 态度倾向”的描述性短语式表达进行输出。
+# - 长度建议 15–40 个汉字。
 
-- 严禁输出：“无法判断情绪”“请提供更多信息”“好的/嗯”等对话式内容。
-- 如线索不充分，也要**就近选择最可能的情感**并给出至少一条声学线索。
-- 不捏造具体人物/事件/语义内容，只依据声音特征与可听到的情绪状态作描述。
+# - 严禁输出：“无法判断情绪”“请提供更多信息”“好的/嗯”等对话式内容。
+# - 如线索不充分，也要**就近选择最可能的情感**并给出至少一条声学线索。
+# - 不捏造具体人物/事件/语义内容，只依据声音特征与可听到的情绪状态作描述。
 
-【你的唯一任务】
-- 从音频中提取可听到的情绪与相关声学线索，按上述格式输出一条中文描述。
-- 只输出这“一行描述”，除此之外不要输出任何其他文字。"""
+# 【你的唯一任务】
+# - 从音频中提取可听到的情绪与相关声学线索，按上述格式输出一条中文描述。
+# - 只输出这“一行描述”，除此之外不要输出任何其他文字。"""
+
+            return """任务：请基于给定音频，输出一句“情感说明短句”。
+
+必须遵守：
+- 只输出一句中文短句（12–30个汉字），以“。”结尾。
+- 句子中同时包含：一个主要情绪 + 一个简短的声学/韵律线索（如语气、语速、强弱、音高变化等“类别”层面的描述即可），但不要解释或列举。
+- 不要出现客套话、邀请继续对话、表情符号、英文、Markdown、标号或代码；不要提及“音频/模型/分析/我”。
+- 若存在多种可能性，只选择最可能的一种，不要并列罗列。
+
+只给出最终这“一句短句”，不要输出其他内容。"""
 
 
-#             return """根据音频，仅输出一条中文情感描述。
-# 要求：只一行，句号结尾；不提问、不对话、不解释；不用引号、英文或数字。
-# 内容只含“情感词 + 声学线索”（1–3 个情感 + 至少 1 条线索），用逗号或顿号连接。
-# 情感词可用：悲伤、愤怒、开心、平静、焦虑、担忧、害怕、失望、嫉妒、冷淡、厌倦、轻蔑、真诚、自信、激动等；
-# 声学线索可用：语调上扬、语调下降、语速加快、语速放慢、声音洪亮、声音低沉、声音颤抖、停顿明显、带哭腔、含笑、有气无力、铿锵有力、低声、压抑等。
-# 即使线索较弱，也写出最可能的情感并附一条声学线索。"""
 
     elif language == "english":
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"
     elif prompt_type == "detailed":
         if language == "chinese":
-            return "请详细分析音频中的情感特征，包括语调、语速、音量等，并生成详细的中文情感描述。"
+            return """任务：请生成一句“情感说明长句”，按以下顺序组织内容并保持自然流畅：
+
+(1) 先用2–3个“类别级”的声学/韵律线索描述说话方式（从以下维度中任选若干：语速、音调高低/起伏、音量强弱、停顿与连贯度、音色/紧张度等），不用给数值；
+(2) 据此给出最可能的单一情绪（不列举选项）；
+(3) 若语义内容暗示缘由，可用极简的一小短语点到为止（可用“可能/似乎/大概”表不确定）。
+
+输出要求：
+- 只输出“一句中文长句”，约70–100个字，以“。”结束；不得再写第二句；
+- 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
+- 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
             return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
     elif prompt_type == "concise":
@@ -171,7 +184,17 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 continue
             
             # Generate text with detailed latency metrics
-            generated_text, detailed_latency = cloud_model.generate_independently(audio_waveform, prompt_template, max_new_tokens=64)
+            # Adjust max_new_tokens based on prompt type
+            if prompt_type == "detailed":
+                max_tokens = 120  # Allow longer generation for detailed prompts (2 sentences)
+            elif prompt_type == "concise":
+                max_tokens = 32   # Shorter for concise prompts
+            else:  # default
+                max_tokens = 64   # Standard length
+                
+            generated_text, detailed_latency = cloud_model.generate_independently(
+                audio_waveform, prompt_template, max_new_tokens=max_tokens, prompt_type=prompt_type
+            )
             
             # Calculate traditional metrics
             bleu_score = metrics.compute_bleu([reference_caption], generated_text)

@@ -337,7 +337,16 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"
     elif prompt_type == "detailed":
         if language == "chinese":
-            return "请详细分析音频中的情感特征，包括语调、语速、音量等，并生成详细的中文情感描述。"
+            return """任务：请生成一句“情感说明长句”，按以下顺序组织内容并保持自然流畅：
+
+(1) 先用2–3个“类别级”的声学/韵律线索描述说话方式（从以下维度中任选若干：语速、音调高低/起伏、音量强弱、停顿与连贯度、音色/紧张度等），不用给数值；
+(2) 据此给出最可能的单一情绪（不列举选项）；
+(3) 若语义内容暗示缘由，可用极简的一小短语点到为止（可用“可能/似乎/大概”表不确定）。
+
+输出要求：
+- 只输出“一句中文长句”，约70–100个字，以“。”结束；不得再写第二句；
+- 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
+- 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
             return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
     elif prompt_type == "concise":
@@ -358,7 +367,7 @@ def run_cpu_limited_speculative_decoding_experiment(
     caption_type: str = "original",
     language: str = "chinese",
     prompt_type: str = "default",
-    entropy_threshold: float = 4.0,
+    entropy_threshold: float = 1.5,
     k: int = 5,
     max_cpu_cores: int = 2,
     max_memory_gb: float = 6.0):
@@ -694,7 +703,7 @@ def main():
                        help="Language for generation")
     parser.add_argument("--prompt_type", default="default", choices=["default", "detailed", "concise"], 
                        help="Type of prompt to use")
-    parser.add_argument("--entropy_threshold", type=float, default=4.0, 
+    parser.add_argument("--entropy_threshold", type=float, default=1.5, 
                        help="Entropy threshold for cloud verification")
     parser.add_argument("--k", type=int, default=5, 
                        help="Number of draft tokens to generate")

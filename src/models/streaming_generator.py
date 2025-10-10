@@ -23,7 +23,10 @@ class StreamingGenerator:
                           inputs: Dict[str, torch.Tensor],
                           max_new_tokens: int = 32,
                           temperature: float = 0.7,
-                          top_p: float = 0.9) -> Iterator[Tuple[str, float, Dict[str, Any]]]:
+                          top_p: float = 0.9,
+                          do_sample: bool = False,
+                          no_repeat_ngram_size: int = 2,
+                          repetition_penalty: float = 1.05) -> Iterator[Tuple[str, float, Dict[str, Any]]]:
         """
         Generate text using TextIteratorStreamer for true streaming
         
@@ -47,12 +50,26 @@ class StreamingGenerator:
                 skip_prompt=True
             )
             
-            # Prepare generation parameters
+            # Create proper stopping criteria based on token IDs with flexible sentence counting
+            from .stopping_criteria import create_stopping_criteria
+            stopping_criteria = create_stopping_criteria(
+                self.processor.tokenizer,
+                n_sentences=2,  # Allow 2 sentences for detailed outputs
+                sentence_end_chars=("。", "."),  # Only count proper sentence endings
+                min_new_tokens=32,  # Minimum tokens before allowing stop
+                prompt_type="default"  # Default prompt type for streaming
+            )
+            
+            # Prepare generation parameters with deterministic output
             generation_kwargs = {
+                **inputs,  # Include input_ids, attention_mask, etc.
                 'max_new_tokens': max_new_tokens,
                 'temperature': temperature,
                 'top_p': top_p,
-                'do_sample': True,
+                'do_sample': do_sample,
+                'no_repeat_ngram_size': no_repeat_ngram_size,
+                'repetition_penalty': repetition_penalty,
+                'stopping_criteria': stopping_criteria,  # Use proper stopping criteria
                 'pad_token_id': self.processor.tokenizer.eos_token_id,
                 'streamer': streamer,
                 'return_dict_in_generate': False,
@@ -69,7 +86,7 @@ class StreamingGenerator:
             # Start generation in a separate thread
             generation_thread = threading.Thread(
                 target=self.model.generate,
-                kwargs={**inputs, **generation_kwargs}
+                kwargs=generation_kwargs
             )
             generation_thread.start()
             
@@ -121,7 +138,10 @@ class StreamingGenerator:
                                      inputs: Dict[str, torch.Tensor],
                                      max_new_tokens: int = 32,
                                      temperature: float = 0.7,
-                                     top_p: float = 0.9) -> Tuple[str, Dict[str, Any]]:
+                                     top_p: float = 0.9,
+                                     do_sample: bool = False,
+                                     no_repeat_ngram_size: int = 2,
+                                     repetition_penalty: float = 1.05) -> Tuple[str, Dict[str, Any]]:
         """
         Generate text with accurate latency metrics using TextIteratorStreamer
         
@@ -138,7 +158,7 @@ class StreamingGenerator:
             ttft = None
             total_tokens = 0
             
-            for text_chunk, step_time, metrics in self.generate_streaming(inputs, max_new_tokens, temperature, top_p):
+            for text_chunk, step_time, metrics in self.generate_streaming(inputs, max_new_tokens, temperature, top_p, do_sample, no_repeat_ngram_size, repetition_penalty):
                 text_chunks.append(text_chunk)
                 step_times.append(step_time)
                 
