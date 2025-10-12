@@ -337,14 +337,14 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"
     elif prompt_type == "detailed":
         if language == "chinese":
-            return """任务：请生成一句“情感说明长句”，按以下顺序组织内容并保持自然流畅：
+            return """任务：请生成“情感说明长句”，按以下顺序组织内容并保持自然流畅：
 
 (1) 先用2–3个“类别级”的声学/韵律线索描述说话方式（从以下维度中任选若干：语速、音调高低/起伏、音量强弱、停顿与连贯度、音色/紧张度等），不用给数值；
 (2) 据此给出最可能的单一情绪（不列举选项）；
 (3) 若语义内容暗示缘由，可用极简的一小短语点到为止（可用“可能/似乎/大概”表不确定）。
 
 输出要求：
-- 只输出“一句中文长句”，约70–100个字，以“。”结束；不得再写第二句；
+- 只输出“两到三句中文长句”，约70–100个字；
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
@@ -367,7 +367,7 @@ def run_cpu_limited_speculative_decoding_experiment(
     caption_type: str = "original",
     language: str = "chinese",
     prompt_type: str = "default",
-    entropy_threshold: float = 1.5,
+    entropy_threshold: float = 3.0,
     k: int = 5,
     max_cpu_cores: int = 2,
     max_memory_gb: float = 6.0):
@@ -435,12 +435,15 @@ def run_cpu_limited_speculative_decoding_experiment(
     # Initialize GPU cloud model
     cloud_model = CloudModel(**config['models']['cloud'])
     
-    # Initialize speculative decoding
+    # Initialize speculative decoding with multi-sentence configuration
     spec_decoding = SimpleSpeculativeDecoding(
         edge_model=edge_model,
         cloud_model=cloud_model,
         entropy_threshold=entropy_threshold,
-        k=k
+        k=k,
+        target_sentences=2,      # Target 2-3 sentences for detailed description
+        min_chars=90,            # Minimum 90 characters for 2-3 sentences
+        min_new_tokens_sc=48     # Minimum 48 tokens before allowing stop
     )
     
     metrics = EvaluationMetrics()
@@ -474,7 +477,7 @@ def run_cpu_limited_speculative_decoding_experiment(
             generated_text, latency_metrics = spec_decoding.generate(
                 audio_features=audio_waveform,
                 prompt=prompt_template,
-                max_new_tokens=64  # Increased for better results
+                max_new_tokens=128  # Increased for 2-3 sentence multi-sentence output
             )
             
             # Calculate traditional metrics
@@ -703,10 +706,10 @@ def main():
                        help="Language for generation")
     parser.add_argument("--prompt_type", default="default", choices=["default", "detailed", "concise"], 
                        help="Type of prompt to use")
-    parser.add_argument("--entropy_threshold", type=float, default=1.5, 
-                       help="Entropy threshold for cloud verification")
+    parser.add_argument("--entropy_threshold", type=float, default=3.0, 
+                       help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.0)")
     parser.add_argument("--k", type=int, default=5, 
-                       help="Number of draft tokens to generate")
+                       help="Number of draft tokens to generate (Recommended: 4 for fluency, 6 for quality)")
     parser.add_argument("--max_cpu_cores", type=int, default=2, 
                        help="Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)")
     parser.add_argument("--max_memory_gb", type=float, default=16.0, 

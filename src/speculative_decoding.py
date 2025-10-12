@@ -20,7 +20,10 @@ class SimpleSpeculativeDecoding:
                  edge_model: EdgeModel, 
                  cloud_model: CloudModel,
                  entropy_threshold: float = 1.5,
-                 k: int = 5):
+                 k: int = 5,
+                 target_sentences: int = 2,
+                 min_chars: int = 90,
+                 min_new_tokens_sc: int = 48):
         """
         Initialize speculative decoding system
         
@@ -29,13 +32,19 @@ class SimpleSpeculativeDecoding:
             cloud_model: Cloud model for verification
             entropy_threshold: Threshold for entropy-based uncertainty
             k: Number of draft tokens to generate
+            target_sentences: Target number of sentences to generate (default: 2)
+            min_chars: Minimum characters for stopping criteria (default: 90 for 2-3 sentences)
+            min_new_tokens_sc: Minimum new tokens for stopping criteria (default: 48)
         """
         self.edge_model = edge_model
         self.cloud_model = cloud_model
         self.entropy_threshold = entropy_threshold
         self.k = k
+        self.target_sentences = target_sentences
+        self.min_chars = min_chars
+        self.min_new_tokens_sc = min_new_tokens_sc
         
-        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}")
     
     def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str) -> dict:
         """Prepare initial context from audio and prompt"""
@@ -108,18 +117,21 @@ class SimpleSpeculativeDecoding:
         if token_id in [eos_token_id, im_end_id, endoftext_id]:
             return True
         
-        # Chinese punctuation and newline as stop conditions
+        # Check for problematic patterns (but NOT sentence-ending punctuation)
         try:
             # Convert token to text to check for stop conditions
             token_text = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
             
-            # Stop on Chinese period, newline, or "Human" (conversation end)
-            if token_text in ['。', '\n', 'Human', 'Human:', 'Please', 'functionalities', '—', '**', '"', '"', '```', '```', '我/', '我/']:
+            # Stop on conversation markers or truly problematic patterns
+            # NOTE: We DO NOT stop on '。' or '\n' - sentence ending is handled by stopping_criteria
+            # This prevents premature truncation before min_chars/min_tokens are reached
+            # Newline is allowed for multi-sentence paragraphs
+            if token_text in ['Human', 'Human:', 'Please', 'functionalities', '—', '**', '"', '"', '```', '```', '我/', '我/']:
                 return True
                 
-            # Stop if token contains newline (for multi-token newlines)
-            if '\n' in token_text:
-                return True
+            # REMOVED: newline as EOS (allows multi-sentence output)
+            # if '\n' in token_text:
+            #     return True
                 
             # Stop on truly problematic patterns that indicate generation issues
             # Only stop on patterns that are universally problematic across datasets
@@ -159,7 +171,7 @@ class SimpleSpeculativeDecoding:
     def generate(self, 
                  audio_features: torch.Tensor, 
                  prompt: str = "基于这个音频，用中文描述说话人的情感状态。",
-                 max_new_tokens: int = 32) -> Tuple[str, Dict]:
+                 max_new_tokens: int = 128) -> Tuple[str, Dict]:
         """
         Main generation function using speculative decoding
         
@@ -308,14 +320,16 @@ class SimpleSpeculativeDecoding:
             prefill_time = time.time() - prefill_start_time
             logger.info(f"Multimodal prefill completed in {prefill_time:.3f}s")
             
-            # Add stopping criteria (same as baseline) for consistent stopping behavior
+            # Add stopping criteria for multi-sentence Chinese audio description
+            # Target: 2-3 natural Chinese sentences (~90-140 characters)
             from src.models.stopping_criteria import create_stopping_criteria
             stopping_criteria = create_stopping_criteria(
                 self.edge_model.processor.tokenizer,
-                n_sentences=2,  # Allow 2 sentences for detailed outputs
-                sentence_end_chars=("。", "."),  # Only count proper sentence endings
-                min_new_tokens=32,  # Minimum tokens before allowing stop
-                prompt_type="detailed"  # Adjust based on prompt type
+                n_sentences=self.target_sentences,  # Configurable (default: 2 sentences)
+                sentence_end_chars=("。", "."),  # Period stops generation
+                min_new_tokens=self.min_new_tokens_sc,  # Configurable (default: 48 for 2-3 sentences)
+                min_chars=self.min_chars,  # Configurable (default: 90 for 2-3 sentences)
+                prompt_type="detailed"  # Use detailed mode for multi-sentence output
             )
             current_context['stopping_criteria'] = stopping_criteria
             logger.info("Added stopping criteria for consistent stopping behavior")
@@ -418,6 +432,66 @@ class SimpleSpeculativeDecoding:
                     # Step 3: Check if we need Cloud verification
                     max_uncertainty = max(uncertainties) if uncertainties else 0
                     needs_cloud_verification = max_uncertainty > self.entropy_threshold
+                    
+                    # Additional check: Punctuation flooding detection
+                    # If draft block has too many punctuation tokens even with low entropy, force cloud verification
+                    # Updated to include colon (5122) which was being abused as substitute punctuation
+                    punctuation_token_ids = {3837, 1773, 30544, 5122, 25}  # 逗号、句号、顿号、冒号(中/英)
+                    punct_count = sum(1 for t in draft_tokens if t in punctuation_token_ids)
+                    punct_ratio = punct_count / len(draft_tokens) if draft_tokens else 0
+                    
+                    # If >40% of tokens are punctuation, force cloud verification regardless of entropy
+                    if punct_ratio > 0.4 and not needs_cloud_verification:
+                        logger.warning(f"Punctuation flooding detected: {punct_count}/{len(draft_tokens)} tokens ({punct_ratio:.1%}) are punctuation")
+                        logger.warning("Forcing cloud verification to prevent punctuation abuse")
+                        needs_cloud_verification = True
+                        max_uncertainty = self.entropy_threshold + 0.1  # Force above threshold
+                    
+                    # Special check: Pathological "short-token + punctuation" pattern
+                    # Patterns like: "呢？呢！呢？" or "停停停？" or "字:字:字:"
+                    # This indicates model is stuck in degenerate mode, generating meaningless filler
+                    if len(draft_tokens) >= 4 and not needs_cloud_verification:
+                        # Decode draft tokens to analyze pattern
+                        try:
+                            draft_text = self.edge_model.processor.tokenizer.decode(draft_tokens, skip_special_tokens=True)
+                            draft_chars = list(draft_text)
+                            
+                            # Count single-character segments (ignoring punctuation)
+                            punct_chars = set(['，', '。', '：', ':', '；', '！', '？', '、', ' '])
+                            content_chars = [c for c in draft_chars if c not in punct_chars]
+                            
+                            # Detect pathological patterns:
+                            # 1. Too many repeated characters
+                            if len(content_chars) >= 4:
+                                from collections import Counter
+                                char_freq = Counter(content_chars)
+                                most_common_char, most_common_count = char_freq.most_common(1)[0]
+                                repeat_ratio = most_common_count / len(content_chars)
+                                
+                                # If one character appears >50% of the time, it's pathological
+                                if repeat_ratio > 0.5:
+                                    logger.warning(f"Character repetition pattern detected: '{most_common_char}' appears {repeat_ratio:.1%} of the time")
+                                    logger.warning(f"Draft text: {draft_text}")
+                                    logger.warning("Forcing cloud verification to break pathological pattern")
+                                    needs_cloud_verification = True
+                                    max_uncertainty = self.entropy_threshold + 0.1
+                            
+                            # 2. Abnormally high punctuation density (>50% of decoded text)
+                            if len(draft_chars) >= 4:
+                                punct_count_in_text = sum(1 for c in draft_chars if c in punct_chars)
+                                punct_density = punct_count_in_text / len(draft_chars)
+                                
+                                if punct_density > 0.5:
+                                    logger.warning(f"Abnormal punctuation density: {punct_density:.1%} of text is punctuation")
+                                    logger.warning(f"Draft text: {draft_text}")
+                                    logger.warning("Forcing cloud verification to break pathological pattern")
+                                    needs_cloud_verification = True
+                                    max_uncertainty = self.entropy_threshold + 0.1
+                        
+                        except Exception as e:
+                            # If decoding fails, skip this check
+                            logger.debug(f"Failed to decode draft tokens for pattern check: {e}")
+                            pass
                 
                 if needs_cloud_verification:
                     logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
@@ -536,16 +610,26 @@ class SimpleSpeculativeDecoding:
                             should_stop = True
                             break
                     
-                    # Check for sentence-ending punctuation (N-sentence stopping strategy)
-                    if len(generated_tokens) > 32:  # Only after minimum tokens
-                        sentence_count = 0
-                        for token in generated_tokens:
-                            if self._is_sentence_end_token(token):
-                                sentence_count += 1
-                                if sentence_count >= 2:  # Stop after 2 sentences
-                                    logger.info(f"Stop condition met: {sentence_count} sentences completed")
-                                    should_stop = True
-                                    break
+                    # REMOVED: Hard-coded 2-sentence stop logic
+                    # This duplicated the stopping_criteria logic and caused conflicts
+                    # Rely exclusively on stopping_criteria (which is configurable via target_sentences)
+                    
+                    # Check stopping criteria in main loop (after tokens are accepted)
+                    if 'stopping_criteria' in current_context and current_context['stopping_criteria'] is not None:
+                        # Create full sequence for stopping criteria check
+                        full_sequence = torch.cat([
+                            current_context['input_ids'][0],
+                            torch.tensor([], device=current_context['input_ids'].device)  # Already included in context
+                        ]).unsqueeze(0) if current_context['input_ids'].dim() == 1 else current_context['input_ids']
+                        
+                        # Actually, just use current_context['input_ids'] which already includes accepted tokens
+                        check_sequence = current_context['input_ids']
+                        
+                        # Check if we should stop
+                        stop_check = any(criterion(check_sequence, None) for criterion in current_context['stopping_criteria'])
+                        if stop_check:
+                            logger.info(f"Stopping criteria met in main loop after {len(generated_tokens)} tokens")
+                            should_stop = True
                 
                 if should_stop:
                     break
@@ -784,11 +868,11 @@ class SimpleSpeculativeDecoding:
                         'return_dict': True
                     }
                     
-                    # Add attention_mask for consistent context length handling
-                    if 'attention_mask' in context:
-                        # Use the current attention_mask length to ensure consistency
-                        current_attention_mask = torch.ones(1, 1, device=current_input_ids.device)
-                        step_inputs['attention_mask'] = current_attention_mask
+                    # REMOVED: 1x1 attention_mask causes position misalignment
+                    # The model will infer correct positions from past_key_values
+                    # if 'attention_mask' in context:
+                    #     current_attention_mask = torch.ones(1, 1, device=current_input_ids.device)
+                    #     step_inputs['attention_mask'] = current_attention_mask
                     
                     # CRITICAL: Pass audio features on the first step to maintain multimodal context
                     if step == 0:
@@ -813,7 +897,8 @@ class SimpleSpeculativeDecoding:
                     all_logits.append(logits)
                     
                     # Apply baseline-level anti-repetition constraints
-                    logits_temp = logits.clone() / 0.7  # Temperature scaling
+                    # NOTE: Temperature scaling is applied ONCE at the end, not here
+                    logits_temp = logits.clone()  # No temperature scaling yet
                     
                     # 1. Repetition penalty (like baseline): penalize recently generated tokens
                     recent_window_size = 64  # Look at recent 64 tokens from context + current draft
@@ -827,48 +912,121 @@ class SimpleSpeculativeDecoding:
                     # Include current draft tokens
                     recent_tokens.extend(draft_tokens)
                     
-                    # Apply repetition penalty (HF style: positive/negative branch)
+                    # Apply repetition penalty ONLY to CJK content tokens (not punctuation)
+                    # This avoids gaming between repetition penalty and punctuation gate
+                    # Note: _is_cjk function will be defined below, need to define it here first
+                    def _is_cjk_temp(token_id):
+                        """Check if token contains CJK characters"""
+                        try:
+                            s = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
+                            return any('\u4e00' <= ch <= '\u9fff' for ch in s)
+                        except:
+                            return False
+                    
                     if recent_tokens:
                         recent_tensor = torch.tensor(recent_tokens, device=logits_temp.device)
                         unique_recent = torch.unique(recent_tensor)
-                        repetition_penalty = 1.1
+                        repetition_penalty = 1.22  # Slightly stronger (was 1.1), but only for content
                         for token_id in unique_recent:
-                            if logits_temp[token_id] > 0:
-                                logits_temp[token_id] /= repetition_penalty
-                            else:
-                                logits_temp[token_id] *= repetition_penalty
+                            # Only apply to CJK content tokens, not punctuation
+                            if _is_cjk_temp(token_id.item()):
+                                if logits_temp[token_id] > 0:
+                                    logits_temp[token_id] /= repetition_penalty
+                                else:
+                                    logits_temp[token_id] *= repetition_penalty
                     
-                    # Apply presence penalty (like baseline) for better consistency
-                    presence_penalty = 0.1
-                    if recent_tokens:
-                        # Count frequency of each token
-                        from collections import Counter
-                        token_counts = Counter(recent_tokens)
-                        for token_id, count in token_counts.items():
-                            # Apply presence penalty proportional to frequency
-                            penalty_factor = 1.0 + presence_penalty * count
-                            logits_temp[token_id] -= penalty_factor
+                    # REMOVED: presence_penalty
+                    # This was causing content tokens to be suppressed more than punctuation
+                    # Combined with 2-gram ban, it made punctuation the "easy choice"
+                    # Keeping only repetition_penalty (multiplicative) is sufficient
                     
-                    # 2. True no-repeat 2-gram constraint (like baseline no_repeat_ngram_size=2)
-                    def build_bigrams_ban(history):
-                        """Build banned next tokens for 2-gram repetition"""
-                        banned = {}
-                        for a, b in zip(history[:-1], history[1:]):
-                            banned.setdefault(a, set()).add(b)
-                        return banned
+                    # REMOVED: Lagging punctuation density penalty
+                    # This was coming "too late" after the pattern already started
+                    # With hard gate in place, this reactive penalty is redundant and can
+                    # interact badly causing "substitute punctuation" seeking behavior
                     
-                    # Combine context and current draft for full history
-                    full_history = (context['input_ids'][0].tolist() + draft_tokens)
-                    if len(full_history) >= 2:
-                        banned_map = build_bigrams_ban(full_history)
-                        prev_token = full_history[-1]
-                        if prev_token in banned_map and banned_map[prev_token]:
-                            # Ban all tokens that would complete existing 2-grams
-                            banned_tokens = list(banned_map[prev_token])
-                            logits_temp[banned_tokens] = -float('inf')
-                            logger.debug(f"Banned {len(banned_tokens)} tokens to prevent 2-gram repetition")
+                    # 2. Lightweight Chinese anti-repetition (non-intrusive)
+                    # Strategy: Block immediate same-char repetition + gentle n-gram on content-only history
+                    def _is_cjk(token_id):
+                        """Check if token contains Chinese/Japanese/Korean characters"""
+                        try:
+                            s = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
+                            return any('\u4e00' <= ch <= '\u9fff' for ch in s)  # Chinese character range
+                        except:
+                            return False
                     
-                    # 3. Use baseline-like decoding with enhanced constraints
+                    # Define punctuation tokens first (needed for content-only history)
+                    def _ids_for(chars):
+                        """Get token IDs for given characters"""
+                        ids = []
+                        for ch in chars:
+                            enc = self.edge_model.processor.tokenizer.encode(ch, add_special_tokens=False)
+                            if enc:
+                                ids.append(enc[0])
+                        return set(ids)
+                    
+                    PUNCT_IDS = _ids_for(['，', '。', '、', '：', ':', '；', '！', '？'])
+                    
+                    # 2.1) Block immediate same-char repetition (CJK content only)
+                    if draft_tokens:
+                        last_token = draft_tokens[-1]
+                        if _is_cjk(last_token):
+                            logits_temp[last_token] = -float('inf')
+                            logger.debug(f"Blocked immediate repetition of CJK token {last_token}")
+                    
+                    # 2.2) Gentle n-gram ban on content-only history (strip punctuation)
+                    full_history = context['input_ids'][0].tolist() + draft_tokens
+                    content_hist = [t for t in full_history if t not in PUNCT_IDS]
+                    
+                    # Apply trigram constraint on content tokens if recent window is CJK
+                    if len(content_hist) >= 3 and all(_is_cjk(t) for t in content_hist[-6:]):
+                        # Build trigram map on content-only history
+                        trigrams = {}
+                        for x, y, z in zip(content_hist[:-2], content_hist[1:-1], content_hist[2:]):
+                            trigrams.setdefault((x, y), set()).add(z)
+                        
+                        if len(content_hist) >= 2:
+                            a, b = content_hist[-2], content_hist[-1]
+                            banned = list(trigrams.get((a, b), []))
+                            if banned:
+                                logits_temp[banned] = -float('inf')
+                                logger.debug(f"Banned {len(banned)} tokens via content-only trigram (CJK)")
+                    
+                    # 3. Hard punctuation gate (pre-selection blocking)
+                    # Prevent "single-char + comma" pattern by enforcing minimum content between punctuation
+                    # Note: PUNCT_IDS and _ids_for already defined above, use them
+                    COMMA_LIKE = _ids_for(['，', '、', '：', ':'])  # Easily abused
+                    PERIOD_LIKE = _ids_for(['。'])
+                    
+                    # Count consecutive CJK content tokens since last punctuation
+                    hist = context['input_ids'][0].tolist() + draft_tokens
+                    since_punct = 0
+                    for t in reversed(hist):
+                        if t in PUNCT_IDS:
+                            break
+                        try:
+                            s = self.edge_model.processor.tokenizer.decode([t], skip_special_tokens=True)
+                            if any('\u4e00' <= ch <= '\u9fff' for ch in s):  # CJK character
+                                since_punct += 1
+                        except:
+                            pass
+                    
+                    # Comma/colon: require at least 4 CJK content tokens (increased from 2)
+                    if since_punct < 4:
+                        for punct_id in COMMA_LIKE:
+                            logits_temp[punct_id] = -float('inf')
+                        logger.debug(f"Hard gate: blocking comma-like punctuation (only {since_punct}/4 CJK tokens since last punct)")
+                    
+                    # Period: require at least 5 CJK content tokens (reduced from 8 for multi-sentence)
+                    # Lower threshold allows natural sentence closure for 2-3 sentence outputs
+                    period_min = 5
+                    if since_punct < period_min:
+                        for punct_id in PERIOD_LIKE:
+                            if not torch.isinf(logits_temp[punct_id]):
+                                logits_temp[punct_id] -= 3.5  # Gentler suppression (was -8.0)
+                        logger.debug(f"Hard gate: suppressing period (only {since_punct}/{period_min} CJK tokens since last punct)")
+                    
+                    # 4. Use baseline-like decoding with enhanced constraints
                     # Apply temperature scaling for consistency with baseline
                     temperature = 0.7
                     logits_scaled = logits_temp / temperature
@@ -876,7 +1034,17 @@ class SimpleSpeculativeDecoding:
                     # Use greedy selection (like baseline do_sample=False)
                     next_token = torch.argmax(logits_scaled, dim=-1).item()
                     
-                    # 4. Additional cycle detection for current draft block
+                    # Fallback: if argmax hits blocked punctuation, pick first non-punct from top-k
+                    if next_token in PUNCT_IDS and since_punct < 4:
+                        top_k = 8
+                        topk_logits, topk_idx = torch.topk(logits_scaled, top_k)
+                        for idx in topk_idx:
+                            if idx.item() not in PUNCT_IDS:
+                                next_token = idx.item()
+                                logger.debug(f"Fallback: switched from punctuation to token {next_token}")
+                                break
+                    
+                    # 5. Additional cycle detection for current draft block
                     if len(draft_tokens) >= 4:
                         recent_draft = draft_tokens[-4:]
                         if recent_draft.count(next_token) >= 2:  # Token appears too frequently in draft
@@ -889,20 +1057,14 @@ class SimpleSpeculativeDecoding:
                     
                     draft_tokens.append(next_token)
                     
-                    # 5. Check stopping criteria (like baseline)
-                    # Combine context + current draft to check for sentence endings
-                    if 'stopping_criteria' in context and context['stopping_criteria'] is not None:
-                        # Create input_ids tensor for stopping criteria check
-                        full_sequence = torch.cat([
-                            context['input_ids'][0], 
-                            torch.tensor(draft_tokens, device=context['input_ids'].device)
-                        ]).unsqueeze(0)
-                        
-                        # Check if we should stop (same logic as baseline)
-                        should_stop = any(criterion(full_sequence, None) for criterion in context['stopping_criteria'])
-                        if should_stop:
-                            logger.info(f"Stopping criteria met at step {step+1}, ending draft generation")
-                            break
+                    # REMOVED: Stopping criteria check in draft generation
+                    # This was causing premature termination of draft blocks
+                    # Stopping criteria should only be checked in main loop after accepting tokens
+                    # Otherwise, draft blocks get interrupted mid-generation, leading to:
+                    #   1. Incomplete draft blocks
+                    #   2. Empty draft_tokens returned
+                    #   3. Main loop break (thinking generation is done)
+                    # Result: Premature stopping after first sentence even when n_sentences=2
                     
                     # Update for next iteration - keep the KV cache!
                     current_past_key_values = outputs.past_key_values

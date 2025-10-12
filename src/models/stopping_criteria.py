@@ -14,18 +14,22 @@ class StopWhenNSentences(StoppingCriteria):
     Uses token IDs for reliable stopping, not string matching
     """
     
-    def __init__(self, tokenizer, n_sentences=2, sentence_end_chars=("。", "."), min_new_tokens=32):
+    def __init__(self, tokenizer, n_sentences=2, sentence_end_chars=("。", "."), min_new_tokens=32, min_chars=70):
         """
         Args:
             tokenizer: HuggingFace tokenizer
             n_sentences: Number of sentences to allow before stopping
             sentence_end_chars: Characters that indicate end of sentence
             min_new_tokens: Minimum tokens to generate before allowing stop
+            min_chars: Minimum characters to generate before allowing stop (default 70)
         """
+        self.tokenizer = tokenizer
         self.n_sentences = n_sentences
         self.min_new_tokens = min_new_tokens
+        self.min_chars = min_chars
         self.generated_count = 0
         self.sentence_count = 0
+        self.initial_length = None  # Track initial prompt length for char counting
         
         # Get token IDs for sentence-ending characters
         self.sentence_end_ids = []
@@ -64,8 +68,13 @@ class StopWhenNSentences(StoppingCriteria):
         Returns:
             True if generation should stop, False otherwise
         """
-        # Count newly generated tokens (excluding the original input)
-        self.generated_count += 1
+        # Record initial length on first call
+        if self.initial_length is None:
+            self.initial_length = input_ids.shape[1] - 1  # Exclude the first generated token
+        
+        # Count newly generated tokens based on sequence length, not call count
+        # This fixes the bug where generated_count was too small in batch/draft scenarios
+        self.generated_count = input_ids.shape[1] - self.initial_length
         
         # Check if the last generated token is a stop token
         last_token_id = input_ids[0, -1].item()
@@ -78,10 +87,36 @@ class StopWhenNSentences(StoppingCriteria):
         if last_token_id in self.sentence_end_ids:
             self.sentence_count += 1
             
-            # Stop if we've reached the target number of sentences AND minimum tokens
-            if (self.sentence_count >= self.n_sentences and 
-                self.generated_count >= self.min_new_tokens):
-                return True
+            # Triple-condition stopping: sentence count + token count + character count
+            # This prevents premature stopping when output is too short
+            if self.sentence_count >= self.n_sentences and self.generated_count >= self.min_new_tokens:
+                # Decode ONLY the newly generated part to check character count
+                try:
+                    # Extract only newly generated tokens (exclude prompt)
+                    new_tokens = input_ids[0, self.initial_length:]
+                    decoded_new_text = self.tokenizer.decode(new_tokens, skip_special_tokens=True)
+                    new_char_count = len(decoded_new_text)
+                    
+                    # Debug logging
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Stopping check: sentence_count={self.sentence_count}/{self.n_sentences}, "
+                               f"tokens={self.generated_count}/{self.min_new_tokens}, "
+                               f"chars={new_char_count}/{self.min_chars}")
+                    
+                    # Only stop if we've generated enough NEW characters
+                    if new_char_count >= self.min_chars:
+                        logger.info(f"All conditions met, stopping generation")
+                        return True
+                    else:
+                        # Not enough new characters yet, continue generation
+                        # (even though we've reached n_sentences and min_new_tokens)
+                        logger.info(f"Not enough characters ({new_char_count}/{self.min_chars}), continuing generation")
+                        pass
+                except Exception as e:
+                    # If decoding fails, fall back to token count only
+                    # This is safer than stopping prematurely
+                    return True
             
         return False
 
@@ -98,6 +133,7 @@ def create_stopping_criteria(tokenizer,
                            n_sentences=2, 
                            sentence_end_chars=("。", "."), 
                            min_new_tokens=32,
+                           min_chars=70,
                            prompt_type="default"):
     """
     Create stopping criteria for generation with flexible sentence counting
@@ -107,6 +143,7 @@ def create_stopping_criteria(tokenizer,
         n_sentences: Number of sentences to allow before stopping
         sentence_end_chars: Characters that indicate end of sentence
         min_new_tokens: Minimum tokens to generate before allowing stop
+        min_chars: Minimum characters to generate before allowing stop
         prompt_type: Type of prompt (affects default parameters)
         
     Returns:
@@ -114,20 +151,23 @@ def create_stopping_criteria(tokenizer,
     """
     # Adjust parameters based on prompt type
     if prompt_type == "detailed":
-        # For detailed prompts, allow more sentences and tokens
+        # For detailed prompts, allow more sentences, tokens, and characters
         n_sentences = max(n_sentences, 2)  # At least 2 sentences
         min_new_tokens = max(min_new_tokens, 32)  # At least 32 tokens
+        min_chars = max(min_chars, 70)  # At least 70 characters
     elif prompt_type == "concise":
         # For concise prompts, be more restrictive
         n_sentences = min(n_sentences, 1)  # At most 1 sentence
         min_new_tokens = min(min_new_tokens, 24)  # At most 24 tokens
+        min_chars = min(min_chars, 40)  # At most 40 characters
     # For default prompts, use provided parameters
     
     stop_criteria = StopWhenNSentences(
         tokenizer=tokenizer,
         n_sentences=n_sentences,
         sentence_end_chars=sentence_end_chars,
-        min_new_tokens=min_new_tokens
+        min_new_tokens=min_new_tokens,
+        min_chars=min_chars
     )
     
     return StoppingCriteriaList([stop_criteria])

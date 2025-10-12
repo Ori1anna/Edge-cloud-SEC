@@ -331,14 +331,14 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
             return "Please generate a concise English emotion description based on the audio content. Example: 'The speaker's voice trembles, expressing sadness and disappointment.'"
     elif prompt_type == "detailed":
         if language == "chinese":
-            return """任务：请生成一句“情感说明长句”，按以下顺序组织内容并保持自然流畅：
+            return """任务：请生成“情感说明长句”，按以下顺序组织内容并保持自然流畅：
 
 (1) 先用2–3个“类别级”的声学/韵律线索描述说话方式（从以下维度中任选若干：语速、音调高低/起伏、音量强弱、停顿与连贯度、音色/紧张度等），不用给数值；
 (2) 据此给出最可能的单一情绪（不列举选项）；
 (3) 若语义内容暗示缘由，可用极简的一小短语点到为止（可用“可能/似乎/大概”表不确定）。
 
 输出要求：
-- 只输出“一句中文长句”，约70–100个字，以“。”结束；不得再写第二句；
+- 只输出“两到三句中文长句”，约70–100个字；
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
