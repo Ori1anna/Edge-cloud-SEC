@@ -927,3 +927,118 @@ class EdgeModel:
             'streaming_metrics': streaming_metrics  # Additional streaming data
         }
     
+    def generate_draft_with_spec_logic(self, 
+                                       audio_features: torch.Tensor,
+                                       prompt: str = "Based on this audio, describe the emotional state of the speaker in Chinese.",
+                                       max_new_tokens: int = 128,
+                                       target_sentences: int = 2,
+                                       min_chars: int = 90,
+                                       min_new_tokens_sc: int = 48,
+                                       prompt_type: str = "detailed") -> tuple[str, dict]:
+        """
+        Generate using the SAME logic as Speculative Decoding's edge generation.
+        This ensures Edge Baseline is directly comparable to Speculative Decoding.
+        
+        This method creates a SimpleSpeculativeDecoding instance with entropy_threshold=999.0,
+        which forces Edge-only mode (Cloud is never called). This way, Edge Baseline uses
+        exactly the same generation logic (CJK-aware constraints, punctuation gates, etc.)
+        as the Edge draft generation in Speculative Decoding.
+        
+        Args:
+            audio_features: Audio waveform tensor (1D)
+            prompt: Text prompt for generation
+            max_new_tokens: Maximum number of tokens to generate
+            target_sentences: Target number of sentences for stopping criteria
+            min_chars: Minimum characters for stopping criteria
+            min_new_tokens_sc: Minimum new tokens before stopping
+            prompt_type: Type of prompt ("default", "detailed", "concise")
+            
+        Returns:
+            Tuple of (generated_text, latency_metrics)
+        """
+        try:
+            import time
+            logger.info("=" * 80)
+            logger.info("Using Speculative Decoding Edge logic for Edge Baseline generation")
+            logger.info(f"This ensures 100% alignment with Speculative Decoding's Edge generation")
+            logger.info("=" * 80)
+            
+            total_start_time = time.time()
+            
+            # Import speculative decoding logic
+            from ..speculative_decoding import SimpleSpeculativeDecoding
+            
+            # DO NOT create CloudModel - we'll pass None and set entropy_threshold=999.0
+            # This avoids loading the 7B Cloud model unnecessarily
+            logger.info(f"Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)")
+            logger.info(f"Cloud model will be set to None (not needed for Edge-only mode)")
+            
+            # Create spec decoder with VERY HIGH entropy threshold and cloud_model=None
+            # This forces Edge-only mode: Cloud is never called for verification
+            spec_decoder = SimpleSpeculativeDecoding(
+                edge_model=self,
+                cloud_model=None,  # CRITICAL: No cloud model needed
+                k=5,  # Draft block size (same as in actual spec decoding)
+                entropy_threshold=999.0,  # CRITICAL: Never call cloud (Edge only)
+                target_sentences=target_sentences,
+                min_chars=min_chars,
+                min_new_tokens_sc=min_new_tokens_sc
+            )
+            
+            logger.info(f"Generating with Edge-only mode:")
+            logger.info(f"  - max_new_tokens={max_new_tokens}")
+            logger.info(f"  - target_sentences={target_sentences}")
+            logger.info(f"  - min_chars={min_chars}")
+            logger.info(f"  - min_new_tokens_sc={min_new_tokens_sc}")
+            logger.info(f"  - prompt_type={prompt_type}")
+            
+            # Use spec decoder's generation logic but force Edge-only
+            # The high entropy_threshold ensures Cloud is never called
+            # Note: prompt_type is not a parameter of generate(), it's already handled in __init__
+            generated_text, spec_metrics = spec_decoder.generate(
+                audio_features=audio_features,  # Fixed: was audio_waveform
+                prompt=prompt,
+                max_new_tokens=max_new_tokens
+                # prompt_type is NOT passed here - stopping criteria already configured in __init__
+            )
+            
+            total_time = time.time() - total_start_time
+            
+            logger.info(f"Edge-only generation completed in {total_time:.3f}s")
+            logger.info(f"Generated text: {generated_text}")
+            logger.info(f"Total cloud calls: {spec_metrics.get('total_cloud_calls', 0)} (should be 0)")
+            
+            # Extract relevant metrics from spec_metrics
+            # spec_metrics already contains all the necessary fields
+            # Format to match the expected latency_metrics structure
+            latency_metrics = {
+                'ttft': spec_metrics.get('ttft', 0.0),
+                'itps': spec_metrics.get('itps', 0.0),
+                'otps': spec_metrics.get('otps', 0.0),
+                'oet': spec_metrics.get('oet', 0.0),
+                'total_time': spec_metrics.get('total_time', total_time),
+                'input_tokens': spec_metrics.get('input_tokens', 0),  # Fixed: was 'total_input_tokens'
+                'output_tokens': spec_metrics.get('output_tokens', 0),  # Fixed: was 'total_output_tokens'
+                'cpu_percent': spec_metrics.get('cpu_percent', 0.0),
+                'ram_gb': spec_metrics.get('ram_gb', 0.0),
+                'gpu_util': spec_metrics.get('gpu_util', 0.0),
+                'gpu_memory_gb': spec_metrics.get('gpu_memory_gb', 0.0),
+                'streaming_metrics': {
+                    'ttft': spec_metrics.get('ttft', 0.0),
+                    'itps': spec_metrics.get('itps', 0.0),
+                    'otps': spec_metrics.get('otps', 0.0),
+                    'oet': spec_metrics.get('oet', 0.0),
+                    'total_time': spec_metrics.get('total_time', total_time),
+                    'input_tokens': spec_metrics.get('input_tokens', 0),
+                    'output_tokens': spec_metrics.get('output_tokens', 0),
+                }
+            }
+            
+            return generated_text, latency_metrics
+            
+        except Exception as e:
+            logger.error(f"Error in generate_draft_with_spec_logic: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+    

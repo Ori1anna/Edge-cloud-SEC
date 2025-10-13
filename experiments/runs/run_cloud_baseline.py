@@ -104,7 +104,7 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
-            return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"
@@ -258,11 +258,16 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
             logger.info(f"  Recall: {result['bertscore_recall']:.4f}")
             logger.info(f"  F1: {result['bertscore_f1']:.4f}")
         
-        # Calculate corpus-level BLEU with Chinese tokenization
+        # Calculate corpus-level BLEU with language-specific tokenization
         import sacrebleu
         hyps = [r['generated_text'] for r in results]
         refs = [[r['reference_caption'] for r in results]]
-        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize='zh')
+        
+        # Select tokenization based on language
+        # Chinese: 'zh' - character-level tokenization
+        # English: '13a' - standard English tokenization (handles punctuation, case, etc.)
+        bleu_tokenize = 'zh' if language == 'chinese' else '13a'
+        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
         overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
         
         # Keep sentence-level averages for diagnostic purposes
@@ -287,7 +292,7 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 "total_samples": len(results)
             },
             "metrics": {
-                "corpus_bleu_zh": overall_bleu,  # Corpus-level BLEU with Chinese tokenization
+                f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
                 "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
                 "avg_cider": avg_cider,
                 "avg_bertscore_precision": avg_bertscore_precision,
@@ -306,7 +311,8 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
             json.dump(overall_results, f, ensure_ascii=False, indent=2)
         
         logger.info(f"Results saved to: {output_file}")
-        logger.info(f"Corpus BLEU (Chinese tokenization): {overall_bleu:.4f}")
+        lang_display = "Chinese" if language == 'chinese' else "English"
+        logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
         logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")

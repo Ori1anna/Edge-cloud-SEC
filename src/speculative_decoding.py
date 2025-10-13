@@ -18,7 +18,7 @@ class SimpleSpeculativeDecoding:
     
     def __init__(self, 
                  edge_model: EdgeModel, 
-                 cloud_model: CloudModel,
+                 cloud_model: CloudModel = None,  # Allow None for Edge-only mode
                  entropy_threshold: float = 1.5,
                  k: int = 5,
                  target_sentences: int = 2,
@@ -29,7 +29,7 @@ class SimpleSpeculativeDecoding:
         
         Args:
             edge_model: Edge model for drafting
-            cloud_model: Cloud model for verification
+            cloud_model: Cloud model for verification (can be None for Edge-only mode)
             entropy_threshold: Threshold for entropy-based uncertainty
             k: Number of draft tokens to generate
             target_sentences: Target number of sentences to generate (default: 2)
@@ -37,12 +37,16 @@ class SimpleSpeculativeDecoding:
             min_new_tokens_sc: Minimum new tokens for stopping criteria (default: 48)
         """
         self.edge_model = edge_model
-        self.cloud_model = cloud_model
+        self.cloud_model = cloud_model  # Can be None
         self.entropy_threshold = entropy_threshold
         self.k = k
         self.target_sentences = target_sentences
         self.min_chars = min_chars
         self.min_new_tokens_sc = min_new_tokens_sc
+        
+        # Log if running in Edge-only mode
+        if cloud_model is None:
+            logger.info("Running in Edge-only mode (cloud_model=None)")
         
         logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}")
     
@@ -378,9 +382,9 @@ class SimpleSpeculativeDecoding:
                                     logger.warning("Context tokens: " + str(context_recent[-8:]) if context_recent else "No context")
                                     logger.warning("Generated tokens: " + str(generated_tokens[-8:]))
                                     logger.warning("Forcing cloud verification to break cycle")
-                                    # Force cloud verification instead of breaking
+                                    # Force cloud verification by setting very high uncertainty
                                     max_uncertainty = 999.0  # Set very high to force cloud call
-                                    break
+                                    # Note: Don't break here, let cloud verification handle it
                     else:
                         # Fallback to legacy method if no KV cache
                         logger.warning("No KV cache available, falling back to legacy generation")
@@ -494,93 +498,100 @@ class SimpleSpeculativeDecoding:
                             pass
                 
                 if needs_cloud_verification:
-                    logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
-                    cloud_calls += 1
-                    
-                    # Step 4: Cloud model verifies draft tokens
-                    # Pass full context including audio features
-                    # Note: prob_threshold is no longer needed as we use rank-based threshold internally
-                    accepted_tokens, correction_token, needs_correction = self.cloud_model.verify_tokens(
-                        current_context, draft_tokens, None  # prob_threshold no longer used
-                    )
-                    
-                    if needs_correction:
-                        total_corrections += 1
-                        should_stop = False  # Initialize should_stop for correction path
-                        
-                        # Record TTFT when first tokens are actually accepted
-                        if first_token_time is None and (accepted_tokens or correction_token is not None):
-                            first_token_time = time.time()
-                            logger.debug(f"TTFT recorded: first accepted tokens from Cloud verification")
-                        
-                        # Step 4: Replace + Discard logic
-                        # - Accept all tokens before the first rejection
-                        # - Replace the first rejected token with Cloud's correction
-                        # - Discard all tokens after the first rejection
-                        
-                        # Add accepted tokens to final output
-                        generated_tokens.extend(accepted_tokens)
-                        total_accepted_tokens += len(accepted_tokens)
-                        
-                        # Add correction token to final output
-                        if correction_token is not None:
-                            generated_tokens.append(correction_token)
-                            total_accepted_tokens += 1
-                            
-                            # Check for stop condition after correction
-                            if self._is_eos_token(correction_token):
-                                logger.info(f"Stop condition met in correction token {correction_token}, stopping generation")
-                                should_stop = True
-                        
-                        # CRITICAL: Fix KV consistency after correction
-                        # Step 1: Rollback both KV and input_ids to state before draft generation
-                        current_context['past_key_values'] = kv_before_draft
-                        
-                        # Rollback input_ids to length before draft generation
-                        if ids_before_draft < current_context['input_ids'].shape[1]:
-                            current_context['input_ids'] = current_context['input_ids'][:, :ids_before_draft]
-                            current_context['attention_mask'] = current_context['attention_mask'][:, :ids_before_draft]
-                            logger.info(f"Rolled back input_ids to length {ids_before_draft}")
-                        
-                        # CRITICAL FIX: Also rollback last_token_id to prevent repeated generation from same position
-                        if 'last_token_id' in current_context and ids_before_draft > 0:
-                            # Set last_token_id to the last token before draft generation
-                            last_valid_token = current_context['input_ids'][0, ids_before_draft - 1:ids_before_draft].clone()
-                            current_context['last_token_id'] = last_valid_token.unsqueeze(0)  # Shape: [1, 1]
-                            logger.info(f"Rolled back last_token_id to token {last_valid_token.item()}")
-                        
-                        # Step 2: Advance KV cache with only accepted tokens + correction token
-                        tokens_to_advance = accepted_tokens + ([correction_token] if correction_token is not None else [])
-                        if kv_before_draft is not None and tokens_to_advance:
-                            logger.info(f"Advancing KV cache with {len(tokens_to_advance)} corrected tokens: {tokens_to_advance}")
-                            updated_kv = self._advance_kv_cache(kv_before_draft, tokens_to_advance, self.edge_model.device)
-                            current_context['past_key_values'] = updated_kv
-                        
-                        # Step 3: Update context with accepted tokens + correction token (discard rejected tokens)
-                        append_list = accepted_tokens + ([correction_token] if correction_token is not None else [])
-                        current_context = self._update_context_incremental(current_context, append_list)
-                        
-                        # Step 6: Continue generation from corrected position
-                        logger.info("Continuing generation from corrected position...")
+                    # Safety check: If cloud_model is None (Edge-only mode), skip cloud verification
+                    if self.cloud_model is None:
+                        logger.warning(f"Cloud verification requested but cloud_model is None (Edge-only mode)")
+                        logger.warning(f"Accepting all Edge tokens instead")
+                        # Accept all Edge tokens in Edge-only mode
+                        needs_cloud_verification = False
                     else:
-                        logger.info(f"Cloud accepted all {len(draft_tokens)} tokens")
-                        should_stop = False  # Initialize should_stop for acceptance path
+                        logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
+                        cloud_calls += 1
                         
-                        # Record TTFT when first tokens are actually accepted
-                        if first_token_time is None:
-                            first_token_time = time.time()
-                            logger.debug(f"TTFT recorded: all Edge tokens accepted by Cloud")
+                        # Step 4: Cloud model verifies draft tokens
+                        # Pass full context including audio features
+                        # Note: prob_threshold is no longer needed as we use rank-based threshold internally
+                        accepted_tokens, correction_token, needs_correction = self.cloud_model.verify_tokens(
+                            current_context, draft_tokens, None  # prob_threshold no longer used
+                        )
                         
-                        generated_tokens.extend(draft_tokens)
-                        total_accepted_tokens += len(draft_tokens)
-                        current_context = self._update_context_incremental(current_context, draft_tokens)
-                        
-                        # Check for stop condition in accepted tokens
-                        for token in draft_tokens:
-                            if self._is_eos_token(token):
-                                logger.info(f"Stop condition met in accepted token {token}, stopping generation")
-                                should_stop = True
-                                break
+                        if needs_correction:
+                            total_corrections += 1
+                            should_stop = False  # Initialize should_stop for correction path
+                            
+                            # Record TTFT when first tokens are actually accepted
+                            if first_token_time is None and (accepted_tokens or correction_token is not None):
+                                first_token_time = time.time()
+                                logger.debug(f"TTFT recorded: first accepted tokens from Cloud verification")
+                            
+                            # Step 4: Replace + Discard logic
+                            # - Accept all tokens before the first rejection
+                            # - Replace the first rejected token with Cloud's correction
+                            # - Discard all tokens after the first rejection
+                            
+                            # Add accepted tokens to final output
+                            generated_tokens.extend(accepted_tokens)
+                            total_accepted_tokens += len(accepted_tokens)
+                            
+                            # Add correction token to final output
+                            if correction_token is not None:
+                                generated_tokens.append(correction_token)
+                                total_accepted_tokens += 1
+                            
+                                # Check for stop condition after correction
+                                if self._is_eos_token(correction_token):
+                                    logger.info(f"Stop condition met in correction token {correction_token}, stopping generation")
+                                    should_stop = True
+                            
+                            # CRITICAL: Fix KV consistency after correction
+                            # Step 1: Rollback both KV and input_ids to state before draft generation
+                            current_context['past_key_values'] = kv_before_draft
+                            
+                            # Rollback input_ids to length before draft generation
+                            if ids_before_draft < current_context['input_ids'].shape[1]:
+                                current_context['input_ids'] = current_context['input_ids'][:, :ids_before_draft]
+                                current_context['attention_mask'] = current_context['attention_mask'][:, :ids_before_draft]
+                                logger.info(f"Rolled back input_ids to length {ids_before_draft}")
+                            
+                            # CRITICAL FIX: Also rollback last_token_id to prevent repeated generation from same position
+                            if 'last_token_id' in current_context and ids_before_draft > 0:
+                                # Set last_token_id to the last token before draft generation
+                                last_valid_token = current_context['input_ids'][0, ids_before_draft - 1:ids_before_draft].clone()
+                                current_context['last_token_id'] = last_valid_token.unsqueeze(0)  # Shape: [1, 1]
+                                logger.info(f"Rolled back last_token_id to token {last_valid_token.item()}")
+                            
+                            # Step 2: Advance KV cache with only accepted tokens + correction token
+                            tokens_to_advance = accepted_tokens + ([correction_token] if correction_token is not None else [])
+                            if kv_before_draft is not None and tokens_to_advance:
+                                logger.info(f"Advancing KV cache with {len(tokens_to_advance)} corrected tokens: {tokens_to_advance}")
+                                updated_kv = self._advance_kv_cache(kv_before_draft, tokens_to_advance, self.edge_model.device)
+                                current_context['past_key_values'] = updated_kv
+                            
+                            # Step 3: Update context with accepted tokens + correction token (discard rejected tokens)
+                            append_list = accepted_tokens + ([correction_token] if correction_token is not None else [])
+                            current_context = self._update_context_incremental(current_context, append_list)
+                            
+                            # Step 6: Continue generation from corrected position
+                            logger.info("Continuing generation from corrected position...")
+                        else:
+                            logger.info(f"Cloud accepted all {len(draft_tokens)} tokens")
+                            should_stop = False  # Initialize should_stop for acceptance path
+                            
+                            # Record TTFT when first tokens are actually accepted
+                            if first_token_time is None:
+                                first_token_time = time.time()
+                                logger.debug(f"TTFT recorded: all Edge tokens accepted by Cloud")
+                            
+                            generated_tokens.extend(draft_tokens)
+                            total_accepted_tokens += len(draft_tokens)
+                            current_context = self._update_context_incremental(current_context, draft_tokens)
+                            
+                            # Check for stop condition in accepted tokens
+                            for token in draft_tokens:
+                                if self._is_eos_token(token):
+                                    logger.info(f"Stop condition met in accepted token {token}, stopping generation")
+                                    should_stop = True
+                                    break
                 else:
                     logger.info(f"Low uncertainty ({max_uncertainty:.3f} <= {self.entropy_threshold}), accepting all Edge tokens")
                     should_stop = False  # Initialize should_stop for low uncertainty path
@@ -599,8 +610,8 @@ class SimpleSpeculativeDecoding:
                         if self._is_eos_token(token):
                             logger.info(f"Stop condition met in accepted token {token}, stopping generation")
                             should_stop = True
-                            break
-                
+                    break
+            
                 # Check for EOS token or other stop conditions (if not already set)
                 if not should_stop:
                     # Use proper token-level stopping instead of string matching
@@ -965,7 +976,13 @@ class SimpleSpeculativeDecoding:
                                 ids.append(enc[0])
                         return set(ids)
                     
-                    PUNCT_IDS = _ids_for(['，', '。', '、', '：', ':', '；', '！', '？'])
+                    # Punctuation IDs for both Chinese and English
+                    PUNCT_IDS = _ids_for([
+                        # Chinese punctuation
+                        '，', '。', '、', '：', '；', '！', '？',
+                        # English punctuation
+                        ',', '.', ';', ':', '!', '?'
+                    ])
                     
                     # 2.1) Block immediate same-char repetition (CJK content only)
                     if draft_tokens:
@@ -995,36 +1012,50 @@ class SimpleSpeculativeDecoding:
                     # 3. Hard punctuation gate (pre-selection blocking)
                     # Prevent "single-char + comma" pattern by enforcing minimum content between punctuation
                     # Note: PUNCT_IDS and _ids_for already defined above, use them
-                    COMMA_LIKE = _ids_for(['，', '、', '：', ':'])  # Easily abused
-                    PERIOD_LIKE = _ids_for(['。'])
+                    COMMA_LIKE = _ids_for([
+                        # Chinese
+                        '，', '、', '：',
+                        # English
+                        ',', ';', ':'
+                    ])
+                    PERIOD_LIKE = _ids_for([
+                        # Chinese
+                        '。',
+                        # English
+                        '.'
+                    ])
                     
-                    # Count consecutive CJK content tokens since last punctuation
+                    # Count consecutive content tokens since last punctuation (language-agnostic)
+                    # Works for both Chinese (CJK characters) and English (words)
                     hist = context['input_ids'][0].tolist() + draft_tokens
                     since_punct = 0
                     for t in reversed(hist):
                         if t in PUNCT_IDS:
                             break
-                        try:
-                            s = self.edge_model.processor.tokenizer.decode([t], skip_special_tokens=True)
-                            if any('\u4e00' <= ch <= '\u9fff' for ch in s):  # CJK character
-                                since_punct += 1
-                        except:
-                            pass
+                        # Count all non-punctuation tokens (not just CJK)
+                        # This works for both Chinese and English:
+                        # - Chinese: 4-5 tokens ≈ 4-5 characters
+                        # - English: 4-5 tokens ≈ 2-5 words (depending on tokenization)
+                        since_punct += 1
                     
-                    # Comma/colon: require at least 4 CJK content tokens (increased from 2)
+                    # Comma/colon: require at least 4 content tokens
+                    # Chinese: 4 tokens ≈ 4 characters
+                    # English: 4 tokens ≈ 2-4 words (reasonable spacing)
                     if since_punct < 4:
                         for punct_id in COMMA_LIKE:
                             logits_temp[punct_id] = -float('inf')
-                        logger.debug(f"Hard gate: blocking comma-like punctuation (only {since_punct}/4 CJK tokens since last punct)")
+                        logger.debug(f"Hard gate: blocking comma-like punctuation (only {since_punct}/4 tokens since last punct)")
                     
-                    # Period: require at least 5 CJK content tokens (reduced from 8 for multi-sentence)
+                    # Period: require at least 5 content tokens (reduced from 8 for multi-sentence)
+                    # Chinese: 5 tokens ≈ 5 characters
+                    # English: 5 tokens ≈ 3-5 words (reasonable sentence length)
                     # Lower threshold allows natural sentence closure for 2-3 sentence outputs
                     period_min = 5
                     if since_punct < period_min:
                         for punct_id in PERIOD_LIKE:
                             if not torch.isinf(logits_temp[punct_id]):
                                 logits_temp[punct_id] -= 3.5  # Gentler suppression (was -8.0)
-                        logger.debug(f"Hard gate: suppressing period (only {since_punct}/{period_min} CJK tokens since last punct)")
+                        logger.debug(f"Hard gate: suppressing period (only {since_punct}/{period_min} tokens since last punct)")
                     
                     # 4. Use baseline-like decoding with enhanced constraints
                     # Apply temperature scaling for consistency with baseline
@@ -1184,7 +1215,7 @@ class SimpleSpeculativeDecoding:
         except Exception as e:
             logger.error(f"Error in _update_context_incremental: {e}")
             return context
-
+    
     def _generate_draft_tokens(self, context: dict, k: int) -> tuple[list, torch.Tensor]:
         """
         Generate k draft tokens using Edge model (legacy method for compatibility)
@@ -1236,13 +1267,9 @@ class SimpleSpeculativeDecoding:
                         logits = torch.stack(draft_scores, dim=1)  # Shape: [batch_size, k, vocab_size]
                         logits = logits[0]  # Remove batch dimension: [k, vocab_size]
                         logger.debug(f"Extracted logits shape: {logits.shape}, expected: [{k}, vocab_size]")
-                    else:
-                        # No scores available in draft_scores - this is a serious issue
-                        logger.error(f"No scores available in outputs.scores[:k] - this indicates a model generation issue")
-                        raise ValueError("Model generation failed to return scores - cannot compute uncertainty")
                 else:
-                    # No scores at all - this is a serious issue
-                    logger.error(f"Model generation returned no scores (outputs.scores is None/empty) - this indicates a model configuration issue")
+                    # No scores available in draft_scores - this is a serious issue
+                    logger.error(f"No scores available in outputs.scores[:k] - this indicates a model generation issue")
                     raise ValueError("Model generation failed to return scores - cannot compute uncertainty")
                 
                 logger.debug(f"Generated {len(draft_tokens)} draft tokens: {draft_tokens}")

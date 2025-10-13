@@ -444,9 +444,25 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
                 logger.warning(f"No reference caption found for {sample['file_id']}")
                 continue
             
-            # Generate draft with detailed latency metrics
-            generated_text, detailed_latency = edge_model.generate_draft(
-                audio_waveform, prompt_template, max_new_tokens=64  # Increased for better results
+            # Generate using Speculative Decoding Edge logic for alignment
+            # This ensures Edge Baseline uses the SAME generation logic as Speculative Decoding's Edge
+            # Key changes from original generate_draft():
+            #   - Uses custom incremental generation (not HF generate())
+            #   - CJK-aware repetition penalty (1.22, content only)
+            #   - Content-only 3-gram ban (removes punctuation)
+            #   - Hard punctuation gate (4 chars for comma, 5 for period)
+            #   - Same-character blocking for CJK
+            #   - Fallback mechanism (top-k non-punctuation)
+            #   - Stopping criteria (2 sentences, 90 chars, 48 tokens minimum)
+            logger.info(f"Using Speculative Decoding Edge logic for sample {sample['file_id']}")
+            generated_text, detailed_latency = edge_model.generate_draft_with_spec_logic(
+                audio_waveform, 
+                prompt_template, 
+                max_new_tokens=128,         # Increased from 64 to 128 (match spec decoding)
+                target_sentences=2,         # Same as spec decoding
+                min_chars=90,               # Same as spec decoding
+                min_new_tokens_sc=48,       # Same as spec decoding
+                prompt_type=prompt_type     # Pass prompt type for stopping criteria
             )
             
             # Calculate traditional metrics
@@ -512,11 +528,16 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
             logger.info(f"  Recall: {result['bertscore_recall']:.4f}")
             logger.info(f"  F1: {result['bertscore_f1']:.4f}")
         
-        # Calculate corpus-level BLEU with Chinese tokenization
+        # Calculate corpus-level BLEU with language-specific tokenization
         import sacrebleu
         hyps = [r['generated_text'] for r in results]
         refs = [[r['reference_caption'] for r in results]]
-        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize='zh')
+        
+        # Select tokenization based on language
+        # Chinese: 'zh' - character-level tokenization
+        # English: '13a' - standard English tokenization (handles punctuation, case, etc.)
+        bleu_tokenize = 'zh' if language == 'chinese' else '13a'
+        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
         overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
         
         # Keep sentence-level averages for diagnostic purposes
@@ -547,7 +568,7 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
                 }
             },
             "metrics": {
-                "corpus_bleu_zh": overall_bleu,  # Corpus-level BLEU with Chinese tokenization
+                f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
                 "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
                 "avg_cider": avg_cider,
                 "avg_bertscore_precision": avg_bertscore_precision,
@@ -566,7 +587,8 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
             json.dump(overall_results, f, ensure_ascii=False, indent=2)
         
         logger.info(f"Results saved to: {output_file}")
-        logger.info(f"Corpus BLEU (Chinese tokenization): {overall_bleu:.4f}")
+        lang_display = "Chinese" if language == 'chinese' else "English"
+        logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
         logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")

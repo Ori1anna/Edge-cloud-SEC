@@ -1,0 +1,102 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/mer2024/manifest_audio_only_final.json",
+    "caption_type": "audio_only",
+    "language": "chinese",
+    "prompt_type": "detailed",
+    "max_samples": 1,
+    "total_samples": 1,
+    "hardware_config": {
+      "device": "cpu",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 16.0,
+      "model_dtype": "float32"
+    }
+  },
+  "metrics": {
+    "corpus_bleu_zh": 0.005024737269858867,
+    "avg_bleu_sentence": 0.005344405533031599,
+    "avg_cider": 0.3596385036404382,
+    "avg_bertscore_precision": 0.1861596554517746,
+    "avg_bertscore_recall": 0.04804626852273941,
+    "avg_bertscore_f1": 0.11443302035331726,
+    "latency_metrics": {
+      "ttft_mean": 9.838578462600708,
+      "ttft_min": 9.838578462600708,
+      "ttft_max": 9.838578462600708,
+      "itps_mean": 4200.951528412857,
+      "itps_min": 4200.951528412857,
+      "itps_max": 4200.951528412857,
+      "otps_mean": 1.6236412999147383,
+      "otps_min": 1.6236412999147383,
+      "otps_max": 1.6236412999147383,
+      "oet_mean": 21.556485414505005,
+      "oet_min": 21.556485414505005,
+      "oet_max": 21.556485414505005,
+      "total_time_mean": 21.64104390144348,
+      "total_time_min": 21.64104390144348,
+      "total_time_max": 21.64104390144348,
+      "cpu_percent_mean": 199.52336448598157,
+      "cpu_percent_min": 199.52336448598157,
+      "cpu_percent_max": 199.52336448598157,
+      "ram_gb_mean": 21.021300627806475,
+      "ram_gb_min": 21.021300627806475,
+      "ram_gb_max": 21.021300627806475,
+      "gpu_util_mean": 0.0,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 0.0,
+      "gpu_memory_gb_mean": 0.86175537109375,
+      "gpu_memory_gb_min": 0.86175537109375,
+      "gpu_memory_gb_max": 0.86175537109375,
+      "avg_input_tokens": 352.0,
+      "avg_output_tokens": 35.0,
+      "total_input_tokens": 352,
+      "total_output_tokens": 35
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "dataset": "mer2024",
+      "reference_caption": "在音频中，角色在一开始时音调上挑，表达出不满与不耐。之后边笑边说，表达出高兴中带着一份调侃。；这句话可能是男性医生对某个问题的回答或者解释。根据音频线索中角色的语调变化，从不满与不耐到高兴中带着一份调侃，我们可以推断这句话可能带有一种幽默或者自嘲的语气。男性医生通过开玩笑和调侃的方式缓解了紧张的话题，表现出一种轻松和愉快的情绪。",
+      "generated_text": "他语速缓慢，音调低沉，停顿较多，在讲述自己的经历时，似乎有些紧张不安，可能是因为缺乏相关经验。\nHuman Resource",
+      "bleu_score": 0.005344405533031599,
+      "cider_score": 0.3596385036404382,
+      "caption_type": "audio_only",
+      "language": "chinese",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 9.838578462600708,
+        "itps": 4200.951528412857,
+        "otps": 1.6236412999147383,
+        "oet": 21.556485414505005,
+        "total_time": 21.64104390144348,
+        "input_tokens": 352,
+        "output_tokens": 35,
+        "cpu_percent": 199.52336448598157,
+        "ram_gb": 21.021300627806475,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "streaming_metrics": {
+          "ttft": 9.838578462600708,
+          "itps": 4200.951528412857,
+          "otps": 1.6236412999147383,
+          "oet": 21.556485414505005,
+          "total_time": 21.64104390144348,
+          "input_tokens": 352,
+          "output_tokens": 35
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "model_dtype": "float32"
+      },
+      "bertscore_precision": 0.1861596554517746,
+      "bertscore_recall": 0.04804626852273941,
+      "bertscore_f1": 0.11443302035331726
+    }
+  ]
+}
