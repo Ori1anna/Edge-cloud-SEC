@@ -348,7 +348,7 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
-            return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"
@@ -367,6 +367,7 @@ def run_cpu_limited_speculative_decoding_experiment(
     caption_type: str = "original",
     language: str = "chinese",
     prompt_type: str = "default",
+    input_modality: str = "audio_only",
     entropy_threshold: float = 3.0,
     k: int = 5,
     max_cpu_cores: int = 2,
@@ -712,6 +713,8 @@ def main():
                        help="Language for generation")
     parser.add_argument("--prompt_type", default="default", choices=["default", "detailed", "concise"], 
                        help="Type of prompt to use")
+    parser.add_argument("--input_modality", default="audio_only", choices=["audio_only", "audio_text"],
+                       help="Input modality: 'audio_only' (audio only) or 'audio_text' (audio + transcription)")
     parser.add_argument("--entropy_threshold", type=float, default=3.0, 
                        help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.0)")
     parser.add_argument("--k", type=int, default=5, 
@@ -733,6 +736,7 @@ def main():
         caption_type=args.caption_type,
         language=args.language,
         prompt_type=args.prompt_type,
+        input_modality=args.input_modality,
         entropy_threshold=args.entropy_threshold,
         k=args.k,
         max_cpu_cores=args.max_cpu_cores,
