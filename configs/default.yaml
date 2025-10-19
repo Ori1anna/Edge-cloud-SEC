@@ -5,12 +5,12 @@ models:
   edge:
     name: "Qwen/Qwen2.5-Omni-3B"
     device: "cuda"
-    dtype: "float16"
+    dtype: "float32"
     
   cloud:
     name: "Qwen/Qwen2.5-Omni-7B"
     device: "cuda"
-    dtype: "float16"
+    dtype: "float32"
 
 # Audio Processing
 audio:

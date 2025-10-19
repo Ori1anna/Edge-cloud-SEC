@@ -1,0 +1,104 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 23:51:08"
+  },
+  "aggregate_metrics": {
+    "average_bleu_1": 0.486717365588358,
+    "average_bleu_4": 0.2564805734914531,
+    "average_meteor": 0.16071862173388615,
+    "average_rouge_l": 0.1755817378497791,
+    "average_cider": 0.9830731802098087,
+    "average_ttft": 1.616146206855774,
+    "average_otps": 20.299172510279064,
+    "average_total_time": 4.702225208282471,
+    "average_output_tokens": 87.5,
+    "total_samples": 2,
+    "processed_samples": 2,
+    "failed_samples": 0,
+    "success_rate": 1.0
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000000.wav",
+      "reference_text": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The speaker's voice is low, slow-paced with a hint of hesitation. There are no signs like raised pitch or quickened pace that would indicate excitement, anger or fear.The overall tone suggests a sense of helplessness, as if they're trying to convey something but can't quite find their words.",
+      "generation_time": 5.204622983932495,
+      "latency_metrics": {
+        "ttft": 2.82912015914917,
+        "itps": 665.4744021768353,
+        "otps": 12.207716974574193,
+        "oet": 4.914923906326294,
+        "total_time": 5.185817003250122,
+        "input_tokens": 180,
+        "output_tokens": 60,
+        "cpu_percent": 52.73681818181817,
+        "ram_gb": 4.284156105735085,
+        "gpu_util": 82,
+        "gpu_memory_gb": 41.579345703125,
+        "streaming_metrics": {
+          "ttft": 2.82912015914917,
+          "itps": 665.4744021768353,
+          "otps": 12.207716974574193,
+          "oet": 4.914923906326294,
+          "total_time": 5.185817003250122,
+          "input_tokens": 180,
+          "output_tokens": 60
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.13579635479295213,
+        "bleu_4": 0.08207013436145266,
+        "meteor": 0.09247027741083223,
+        "rouge_l": 0.13402061855670105,
+        "cider": 0.9824603570075259
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000007.wav",
+      "reference_text": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "The speaker's voice is clear, with no noticeable changes or distortions. The tone seems steady, without any signs of excitement, fear or anger.The speech content, \"那就不见不散了啊 哎好再见\" suggests that they are likely in a calm and composed state. They seem to be concluding an interaction, possibly after making some arrangements. There's nothing in the acoustic cues indicating strong emotions like joy, sadness or anxiety.So, based on this analysis, I would predict that the individual is in a neutral, calm emotional state at the time of speaking.",
+      "generation_time": 4.199827432632446,
+      "latency_metrics": {
+        "ttft": 0.40317225456237793,
+        "itps": 1425.742263922362,
+        "otps": 28.390628045983938,
+        "oet": 4.050632476806641,
+        "total_time": 4.199021339416504,
+        "input_tokens": 211,
+        "output_tokens": 115,
+        "cpu_percent": 95.11999999999999,
+        "ram_gb": 4.583759307861328,
+        "gpu_util": 99,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.40317225456237793,
+          "itps": 1425.742263922362,
+          "otps": 28.390628045983938,
+          "oet": 4.050632476806641,
+          "total_time": 4.199021339416504,
+          "input_tokens": 211,
+          "output_tokens": 115
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.8376383763837638,
+        "bleu_4": 0.4308910126214535,
+        "meteor": 0.22896696605694009,
+        "rouge_l": 0.21714285714285717,
+        "cider": 0.9836860034120914
+      }
+    }
+  ]
+}

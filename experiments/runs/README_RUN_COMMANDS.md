@@ -439,7 +439,7 @@ echo "结果文件保存在 experiments/results/ 目录下"
 
 - **Cloud端 (G100 GPU)**:
   - GPU: G100 64GB显存
-  - 设备: CUDA + float16精度
+  - 设备: CUDA + float32精度
   - 高性能计算资源
 
 ## 📊 测试结果分析

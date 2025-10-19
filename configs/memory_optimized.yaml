@@ -6,12 +6,12 @@ models:
   edge:
     name: "Qwen/Qwen2.5-Omni-3B"
     device: "cuda"
-    dtype: "float16"  # Use float16 to reduce memory usage
+    dtype: "float32"  # Updated to float32 for consistency
     
   cloud:
     name: "Qwen/Qwen2.5-Omni-7B"
     device: "cuda"
-    dtype: "float16"
+    dtype: "float32"
 
 # Audio Processing
 audio:

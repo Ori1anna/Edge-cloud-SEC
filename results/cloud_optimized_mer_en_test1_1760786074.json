@@ -1,0 +1,212 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 22:14:34"
+  },
+  "aggregate_metrics": {
+    "average_bleu_1": 0.0,
+    "average_bleu_4": 0.0,
+    "average_meteor": 0.0,
+    "average_rouge_l": 0.0,
+    "average_cider": 0.0,
+    "average_ttft": 0.4569188117980957,
+    "average_otps": 17.684831578498063,
+    "average_total_time": 2.0006141662597656,
+    "average_output_tokens": 41.0,
+    "total_samples": 5,
+    "processed_samples": 5,
+    "failed_samples": 0,
+    "success_rate": 1.0
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000000.wav",
+      "reference_text": "",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is somewhat hesitant and uncertain. The speaker seems to be expressing a lack of knowledge or experience in a particular area, as indicated by the phrase \"我哪知道啊\" which",
+      "generation_time": 2.712373971939087,
+      "latency_metrics": {
+        "ttft": 0.9061238765716553,
+        "itps": 1099.8904734640716,
+        "otps": 19.69989197313419,
+        "oet": 2.5380849838256836,
+        "total_time": 2.702146530151367,
+        "input_tokens": 180,
+        "output_tokens": 50,
+        "cpu_percent": 81.73545454545454,
+        "ram_gb": 4.236006303267046,
+        "gpu_util": 89,
+        "gpu_memory_gb": 41.579345703125,
+        "streaming_metrics": {
+          "ttft": 0.9061238765716553,
+          "itps": 1099.8904734640716,
+          "otps": 19.69989197313419,
+          "oet": 2.5380849838256836,
+          "total_time": 2.702146530151367,
+          "input_tokens": 180,
+          "output_tokens": 50
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000007.wav",
+      "reference_text": "",
+      "generated_text": "Human:",
+      "generation_time": 1.029463291168213,
+      "latency_metrics": {
+        "ttft": 0.39136385917663574,
+        "itps": 1541.1454374163034,
+        "otps": 5.607692651192838,
+        "oet": 0.8916323184967041,
+        "total_time": 1.0288591384887695,
+        "input_tokens": 211,
+        "output_tokens": 5,
+        "cpu_percent": 63.300000000000004,
+        "ram_gb": 4.288154602050781,
+        "gpu_util": 53,
+        "gpu_memory_gb": 41.704345703125,
+        "streaming_metrics": {
+          "ttft": 0.39136385917663574,
+          "itps": 1541.1454374163034,
+          "otps": 5.607692651192838,
+          "oet": 0.8916323184967041,
+          "total_time": 1.0288591384887695,
+          "input_tokens": 211,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000021",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000021.wav",
+      "reference_text": "",
+      "generated_text": "The audio contains a woman speaking in Chinese. The tone of her voice is calm and measured, without any signs of raised pitch or rapid speech. Her words are clear and deliberate, suggesting a state of composure. There are no indications of strong emotions like anger or excitement in her voice. Based on these observations, I would predict that the individual is in a calm and peaceful emotional state.",
+      "generation_time": 2.8552727699279785,
+      "latency_metrics": {
+        "ttft": 0.34003591537475586,
+        "itps": 1460.6509210045058,
+        "otps": 29.284829747571926,
+        "oet": 2.7317898273468018,
+        "total_time": 2.8545920848846436,
+        "input_tokens": 179,
+        "output_tokens": 80,
+        "cpu_percent": 87.5923076923077,
+        "ram_gb": 4.288222386286809,
+        "gpu_util": 96,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.34003591537475586,
+          "itps": 1460.6509210045058,
+          "otps": 29.284829747571926,
+          "oet": 2.7317898273468018,
+          "total_time": 2.8545920848846436,
+          "input_tokens": 179,
+          "output_tokens": 80
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000033",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000033.wav",
+      "reference_text": "",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is calm and measured, without any signs of raised pitch or rapid speech. The content of the speech is about the Dragon Boat team's players being described as 'newbies'. There are no indications of strong emotions like anger or excitement in the voice.",
+      "generation_time": 2.4782097339630127,
+      "latency_metrics": {
+        "ttft": 0.3435657024383545,
+        "itps": 1544.4801134932109,
+        "otps": 27.611018409252306,
+        "oet": 2.354132652282715,
+        "total_time": 2.477553129196167,
+        "input_tokens": 190,
+        "output_tokens": 65,
+        "cpu_percent": 87.15454545454544,
+        "ram_gb": 4.288417816162109,
+        "gpu_util": 98,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.3435657024383545,
+          "itps": 1544.4801134932109,
+          "otps": 27.611018409252306,
+          "oet": 2.354132652282715,
+          "total_time": 2.477553129196167,
+          "input_tokens": 190,
+          "output_tokens": 65
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000039",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000039.wav",
+      "reference_text": "",
+      "generated_text": "Human:",
+      "generation_time": 0.9277510643005371,
+      "latency_metrics": {
+        "ttft": 0.30350470542907715,
+        "itps": 1064.593664990041,
+        "otps": 6.2207251113390525,
+        "oet": 0.803764820098877,
+        "total_time": 0.9272077083587646,
+        "input_tokens": 131,
+        "output_tokens": 5,
+        "cpu_percent": 69.96666666666667,
+        "ram_gb": 4.288524627685547,
+        "gpu_util": 95,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.30350470542907715,
+          "itps": 1064.593664990041,
+          "otps": 6.2207251113390525,
+          "oet": 0.803764820098877,
+          "total_time": 0.9272077083587646,
+          "input_tokens": 131,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    }
+  ]
+}

@@ -347,7 +347,20 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 - 只输出“两到三句中文长句”，约70–100个字；
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
+#         elif language == "english":
+#             return """You are an expert in emotional analysis. Please analyze the audio content and provide a detailed English description of the speaker's emotional state.
+
+# IMPORTANT REQUIREMENTS:
+# - Output ONLY in English language
+# - Provide 2-3 detailed sentences (60-100 words)
+# - Focus on acoustic features: tone, pace, volume, pitch variations
+# - Describe the emotional state based on these acoustic cues
+# - Use third person perspective (e.g., "The speaker", "The individual")
+# - Do not use Chinese characters or any non-English text
+
+# Example format: "The speaker's voice exhibits [acoustic features], indicating [emotional state]. The tone suggests [additional analysis]. Based on these acoustic cues, the individual appears to be experiencing [emotion]." """
         elif language == "english":
+                    # return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
             return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
     elif prompt_type == "concise":
         if language == "chinese":
@@ -482,7 +495,10 @@ def run_cpu_limited_speculative_decoding_experiment(
             )
             
             # Calculate traditional metrics
-            bleu_score = metrics.compute_bleu([reference_caption], generated_text)
+            bleu_1_score = metrics.compute_bleu_1([reference_caption], generated_text)
+            bleu_4_score = metrics.compute_bleu_4([reference_caption], generated_text)
+            meteor_score = metrics.compute_meteor([reference_caption], generated_text, language=language)
+            rouge_l_score = metrics.compute_rouge_l([reference_caption], generated_text)
             cider_score = metrics.compute_cider([reference_caption], generated_text)
             
             # Extract speculative decoding specific metrics from latency_metrics
@@ -504,7 +520,10 @@ def run_cpu_limited_speculative_decoding_experiment(
                 "dataset": sample['dataset'],
                 "reference_caption": reference_caption,
                 "generated_text": generated_text,
-                "bleu_score": bleu_score,
+                "bleu_1_score": bleu_1_score,
+                "bleu_4_score": bleu_4_score,
+                "meteor_score": meteor_score,
+                "rouge_l_score": rouge_l_score,
                 "cider_score": cider_score,
                 "caption_type": caption_type,
                 "language": language,
@@ -521,7 +540,7 @@ def run_cpu_limited_speculative_decoding_experiment(
                     "max_cpu_cores": max_cpu_cores,
                     "max_memory_gb": max_memory_gb,
                     "edge_model_dtype": "float32",
-                    "cloud_model_dtype": "float16"
+                    "cloud_model_dtype": "float32"
                 }
             }
             results.append(result)
@@ -530,7 +549,10 @@ def run_cpu_limited_speculative_decoding_experiment(
                 logger.info(f"Sample {i+1}:")
                 logger.info(f"  Reference: {reference_caption}")
                 logger.info(f"  Generated: {generated_text}")
-                logger.info(f"  BLEU: {bleu_score:.4f}")
+                logger.info(f"  BLEU-1: {bleu_1_score:.4f}")
+                logger.info(f"  BLEU-4: {bleu_4_score:.4f}")
+                logger.info(f"  METEOR: {meteor_score:.4f}")
+                logger.info(f"  ROUGE-L: {rouge_l_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
                 logger.info(f"  BERTScore: Computing in batch...")
                 logger.info(f"  Cloud calls: {spec_metrics['cloud_calls']}")
@@ -580,7 +602,10 @@ def run_cpu_limited_speculative_decoding_experiment(
         overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
         
         # Keep sentence-level averages for diagnostic purposes
-        avg_bleu_sentence = sum(r['bleu_score'] for r in results) / len(results)
+        avg_bleu_1_sentence = sum(r['bleu_1_score'] for r in results) / len(results)
+        avg_bleu_4_sentence = sum(r['bleu_4_score'] for r in results) / len(results)
+        avg_meteor_sentence = sum(r['meteor_score'] for r in results) / len(results)
+        avg_rouge_l_sentence = sum(r['rouge_l_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
         avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
         avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
@@ -620,12 +645,15 @@ def run_cpu_limited_speculative_decoding_experiment(
                     "max_cpu_cores": max_cpu_cores,
                     "max_memory_gb": max_memory_gb,
                     "edge_model_dtype": "float32",
-                    "cloud_model_dtype": "float16"
+                    "cloud_model_dtype": "float32"
                 }
             },
             "metrics": {
                 f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
-                "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
+                "avg_bleu_1_sentence": avg_bleu_1_sentence,  # Sentence-level BLEU-1 average
+                "avg_bleu_4_sentence": avg_bleu_4_sentence,  # Sentence-level BLEU-4 average
+                "avg_meteor_sentence": avg_meteor_sentence,  # Sentence-level METEOR average
+                "avg_rouge_l_sentence": avg_rouge_l_sentence,  # Sentence-level ROUGE-L average
                 "avg_cider": avg_cider,
                 "avg_bertscore_precision": avg_bertscore_precision,
                 "avg_bertscore_recall": avg_bertscore_recall,
@@ -653,7 +681,10 @@ def run_cpu_limited_speculative_decoding_experiment(
         logger.info(f"Results saved to: {output_file}")
         lang_display = "Chinese" if language == 'chinese' else "English"
         logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
-        logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
+        logger.info(f"Average BLEU-1 (sentence-level): {avg_bleu_1_sentence:.4f}")
+        logger.info(f"Average BLEU-4 (sentence-level): {avg_bleu_4_sentence:.4f}")
+        logger.info(f"Average METEOR (sentence-level): {avg_meteor_sentence:.4f}")
+        logger.info(f"Average ROUGE-L (sentence-level): {avg_rouge_l_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
         logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")
@@ -715,8 +746,8 @@ def main():
                        help="Type of prompt to use")
     parser.add_argument("--input_modality", default="audio_only", choices=["audio_only", "audio_text"],
                        help="Input modality: 'audio_only' (audio only) or 'audio_text' (audio + transcription)")
-    parser.add_argument("--entropy_threshold", type=float, default=3.0, 
-                       help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.0)")
+    parser.add_argument("--entropy_threshold", type=float, default=3.5, 
+                       help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.5 for better repetition control)")
     parser.add_argument("--k", type=int, default=5, 
                        help="Number of draft tokens to generate (Recommended: 4 for fluency, 6 for quality)")
     parser.add_argument("--max_cpu_cores", type=int, default=2, 

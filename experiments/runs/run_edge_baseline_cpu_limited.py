@@ -468,7 +468,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
             )
             
             # Calculate traditional metrics
-            bleu_score = metrics.compute_bleu([reference_caption], generated_text)
+            bleu_1_score = metrics.compute_bleu_1([reference_caption], generated_text)
+            bleu_4_score = metrics.compute_bleu_4([reference_caption], generated_text)
+            meteor_score = metrics.compute_meteor([reference_caption], generated_text, language=language)
+            rouge_l_score = metrics.compute_rouge_l([reference_caption], generated_text)
             cider_score = metrics.compute_cider([reference_caption], generated_text)
             
             # Store results (BERTScore will be calculated in batch later)
@@ -477,7 +480,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
                 "dataset": sample['dataset'],
                 "reference_caption": reference_caption,
                 "generated_text": generated_text,
-                "bleu_score": bleu_score,
+                "bleu_1_score": bleu_1_score,
+                "bleu_4_score": bleu_4_score,
+                "meteor_score": meteor_score,
+                "rouge_l_score": rouge_l_score,
                 "cider_score": cider_score,
                 "caption_type": caption_type,
                 "language": language,
@@ -496,7 +502,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
                 logger.info(f"Sample {i+1}:")
                 logger.info(f"  Reference: {reference_caption}")
                 logger.info(f"  Generated: {generated_text}")
-                logger.info(f"  BLEU: {bleu_score:.4f}")
+                logger.info(f"  BLEU-1: {bleu_1_score:.4f}")
+                logger.info(f"  BLEU-4: {bleu_4_score:.4f}")
+                logger.info(f"  METEOR: {meteor_score:.4f}")
+                logger.info(f"  ROUGE-L: {rouge_l_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
                 logger.info(f"  BERTScore: Computing in batch...")
                 if detailed_latency:
@@ -543,7 +552,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
         overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
         
         # Keep sentence-level averages for diagnostic purposes
-        avg_bleu_sentence = sum(r['bleu_score'] for r in results) / len(results)
+        avg_bleu_1_sentence = sum(r['bleu_1_score'] for r in results) / len(results)
+        avg_bleu_4_sentence = sum(r['bleu_4_score'] for r in results) / len(results)
+        avg_meteor_sentence = sum(r['meteor_score'] for r in results) / len(results)
+        avg_rouge_l_sentence = sum(r['rouge_l_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
         avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
         avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
@@ -571,7 +583,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
             },
             "metrics": {
                 f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
-                "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
+                "avg_bleu_1_sentence": avg_bleu_1_sentence,  # Sentence-level BLEU-1 average
+                "avg_bleu_4_sentence": avg_bleu_4_sentence,  # Sentence-level BLEU-4 average
+                "avg_meteor_sentence": avg_meteor_sentence,  # Sentence-level METEOR average
+                "avg_rouge_l_sentence": avg_rouge_l_sentence,  # Sentence-level ROUGE-L average
                 "avg_cider": avg_cider,
                 "avg_bertscore_precision": avg_bertscore_precision,
                 "avg_bertscore_recall": avg_bertscore_recall,
@@ -591,7 +606,10 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
         logger.info(f"Results saved to: {output_file}")
         lang_display = "Chinese" if language == 'chinese' else "English"
         logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
-        logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
+        logger.info(f"Average BLEU-1 (sentence-level): {avg_bleu_1_sentence:.4f}")
+        logger.info(f"Average BLEU-4 (sentence-level): {avg_bleu_4_sentence:.4f}")
+        logger.info(f"Average METEOR (sentence-level): {avg_meteor_sentence:.4f}")
+        logger.info(f"Average ROUGE-L (sentence-level): {avg_rouge_l_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
         logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")

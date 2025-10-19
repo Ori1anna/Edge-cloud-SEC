@@ -22,11 +22,39 @@ except ImportError:
     BERTSCORE_AVAILABLE = False
     logger.warning("BERTScore not available. Install with: pip install bert-score")
 
+# METEOR imports
+try:
+    from nltk.translate.meteor_score import meteor_score
+    METEOR_AVAILABLE = True
+    logger.info("METEOR is available")
+except ImportError:
+    METEOR_AVAILABLE = False
+    logger.warning("METEOR not available. Install with: pip install nltk")
+
+# ROUGE imports
+try:
+    from rouge_score import rouge_scorer
+    ROUGE_AVAILABLE = True
+    logger.info("ROUGE is available")
+except ImportError:
+    ROUGE_AVAILABLE = False
+    logger.warning("ROUGE not available. Install with: pip install rouge-score")
+
 # Download required NLTK data
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
     nltk.download('punkt')
+
+try:
+    nltk.data.find('corpora/wordnet')
+except LookupError:
+    nltk.download('wordnet')
+
+try:
+    nltk.data.find('corpora/omw-1.4')
+except LookupError:
+    nltk.download('omw-1.4')
 
 
 class EvaluationMetrics:
@@ -36,8 +64,8 @@ class EvaluationMetrics:
         self.smoothing = SmoothingFunction().method1
         self.bertscorer_cache = {}  # Cache for BERTScorer objects
     
-    def compute_bleu(self, references: List[str], hypothesis: str) -> float:
-        """Compute BLEU-4 score"""
+    def compute_bleu(self, references: List[str], hypothesis: str, n_gram: int = 4) -> float:
+        """Compute BLEU-n score (default BLEU-4)"""
         try:
             # Clean hypothesis text (remove special tokens)
             hypothesis = hypothesis.replace('<|im_end|>', '').strip()
@@ -50,13 +78,23 @@ class EvaluationMetrics:
             logger.debug(f"Reference tokens: {ref_tokens}")
             logger.debug(f"Hypothesis tokens: {hyp_tokens}")
             
-            bleu_score = sentence_bleu(ref_tokens, hyp_tokens, smoothing_function=self.smoothing)
-            logger.debug(f"BLEU score: {bleu_score}")
+            # Compute BLEU with specified n-gram
+            weights = [1/n_gram] * n_gram + [0] * (4 - n_gram)  # Only use first n_gram weights
+            bleu_score = sentence_bleu(ref_tokens, hyp_tokens, weights=weights, smoothing_function=self.smoothing)
+            logger.debug(f"BLEU-{n_gram} score: {bleu_score}")
             
             return bleu_score
         except Exception as e:
-            logger.error(f"Error computing BLEU: {e}")
+            logger.error(f"Error computing BLEU-{n_gram}: {e}")
             return 0.0
+    
+    def compute_bleu_1(self, references: List[str], hypothesis: str) -> float:
+        """Compute BLEU-1 score"""
+        return self.compute_bleu(references, hypothesis, n_gram=1)
+    
+    def compute_bleu_4(self, references: List[str], hypothesis: str) -> float:
+        """Compute BLEU-4 score"""
+        return self.compute_bleu(references, hypothesis, n_gram=4)
     
     def compute_cider(self, references: List[str], hypothesis: str) -> float:
         """Compute CIDEr score (simplified version)"""
@@ -106,6 +144,133 @@ class EvaluationMetrics:
             return 0.0
         
         return dot_product / (norm1 * norm2)
+    
+    def compute_meteor(self, references: List[str], hypothesis: str, language: str = "chinese") -> float:
+        """
+        Compute METEOR score
+        
+        Args:
+            references: List of reference texts
+            hypothesis: Generated text
+            language: Language parameter ("chinese", "english", etc.)
+            
+        Returns:
+            METEOR score
+        """
+        if not METEOR_AVAILABLE:
+            logger.warning("METEOR not available, returning zero score")
+            return 0.0
+        
+        try:
+            # Clean texts
+            hypothesis = hypothesis.replace('<|im_end|>', '').strip()
+            clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
+            
+            # Skip empty texts
+            if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
+                logger.warning("Empty hypothesis or references, returning zero METEOR score")
+                return 0.0
+            
+            # Use the best reference (first non-empty)
+            best_reference = None
+            for ref in clean_references:
+                if ref.strip():
+                    best_reference = ref.strip()
+                    break
+            
+            if not best_reference:
+                logger.warning("No valid reference found, returning zero METEOR score")
+                return 0.0
+            
+            # Tokenization based on language
+            if language.lower() in ["english", "en"]:
+                # Use word tokenization for English
+                ref_tokens = word_tokenize(best_reference.lower())
+                hyp_tokens = word_tokenize(hypothesis.lower())
+            else:
+                # Use character tokenization for Chinese and other languages
+                ref_tokens = list(best_reference.lower())
+                hyp_tokens = list(hypothesis.lower())
+            
+            logger.debug(f"Computing METEOR for hypothesis: '{hypothesis[:50]}...'")
+            logger.debug(f"Computing METEOR for reference: '{best_reference[:50]}...'")
+            logger.debug(f"Language: {language}, Tokenization: {'word' if language.lower() in ['english', 'en'] else 'character'}")
+            
+            # Compute METEOR score
+            meteor_score_value = meteor_score([ref_tokens], hyp_tokens)
+            
+            # Handle potential NaN or None values
+            if meteor_score_value is None or str(meteor_score_value).lower() == 'nan':
+                logger.warning(f"METEOR returned invalid value, using 0.0")
+                meteor_score_value = 0.0
+            
+            logger.debug(f"METEOR score: {meteor_score_value}")
+            return float(meteor_score_value)
+            
+        except Exception as e:
+            logger.error(f"Error computing METEOR: {e}")
+            return 0.0
+    
+    def compute_rouge_l(self, references: List[str], hypothesis: str) -> float:
+        """
+        Compute ROUGE-L score
+        
+        Args:
+            references: List of reference texts
+            hypothesis: Generated text
+            
+        Returns:
+            ROUGE-L F1 score
+        """
+        if not ROUGE_AVAILABLE:
+            logger.warning("ROUGE not available, returning zero score")
+            return 0.0
+        
+        try:
+            # Clean texts
+            hypothesis = hypothesis.replace('<|im_end|>', '').strip()
+            clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
+            
+            # Skip empty texts
+            if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
+                logger.warning("Empty hypothesis or references, returning zero ROUGE-L score")
+                return 0.0
+            
+            # Use the best reference (first non-empty)
+            best_reference = None
+            for ref in clean_references:
+                if ref.strip():
+                    best_reference = ref.strip()
+                    break
+            
+            if not best_reference:
+                logger.warning("No valid reference found, returning zero ROUGE-L score")
+                return 0.0
+            
+            logger.debug(f"Computing ROUGE-L for hypothesis: '{hypothesis[:50]}...'")
+            logger.debug(f"Computing ROUGE-L for reference: '{best_reference[:50]}...'")
+            
+            # Initialize ROUGE scorer
+            scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+            
+            # Compute ROUGE-L score
+            scores = scorer.score(best_reference, hypothesis)
+            
+            # Handle case where ROUGE-L might return 0.0
+            if scores and 'rougeL' in scores:
+                rouge_l_f1 = scores['rougeL'].fmeasure
+                # Ensure we don't return NaN or None
+                if rouge_l_f1 is None or str(rouge_l_f1).lower() == 'nan':
+                    rouge_l_f1 = 0.0
+                logger.debug(f"ROUGE-L F1 score: {rouge_l_f1}")
+                return float(rouge_l_f1)
+            else:
+                logger.warning(f"ROUGE-L calculation failed for hypothesis: '{hypothesis[:50]}...'")
+                return 0.0
+            
+        except Exception as e:
+            logger.error(f"Error computing ROUGE-L: {e}")
+            return 0.0
     
     def compute_bertscore(self, references: List[str], hypothesis: str, language: str = "chinese") -> Dict[str, float]:
         """
@@ -180,7 +345,7 @@ class EvaluationMetrics:
                 [best_reference],  # references
                 model_type=model_type,
                 lang=bertscore_lang,
-                rescale_with_baseline=True,  # Use rescaling for better human correlation
+                rescale_with_baseline=False,  # CRITICAL: Disable rescaling to prevent negative scores
                 idf=use_idf,  # Conditionally enable IDF based on reference count
                 verbose=False
             )
@@ -256,7 +421,7 @@ class EvaluationMetrics:
                     self.bertscorer_cache[cache_key] = BERTScorer(
                         model_type=model_type,
                         lang=bertscore_lang,
-                        rescale_with_baseline=True,  # CRITICAL: Enable rescaling for better human correlation
+                        rescale_with_baseline=True,  # CRITICAL: Disable rescaling to prevent negative scores
                         idf=True,  # Enable IDF with corpus-level calculation
                         idf_sents=all_references,  # Use all references for IDF estimation
                         verbose=False  # Reduce logging noise
@@ -271,7 +436,7 @@ class EvaluationMetrics:
                         self.bertscorer_cache[cache_key] = BERTScorer(
                             model_type=model_type,
                             lang=bertscore_lang,
-                            rescale_with_baseline=True,
+                            rescale_with_baseline=False,  # Disable rescaling to prevent negative scores
                             idf=False
                         )
                         logger.info("Fallback BERTScorer created successfully")
@@ -468,18 +633,28 @@ class EvaluationMetrics:
                            reference_emotions: List[str] = None,
                            latencies: List[float] = None,
                            language: str = "zh") -> Dict[str, float]:
-        """Compute all evaluation metrics including BERTScore with corpus-level IDF"""
+        """Compute all evaluation metrics including BLEU-1, BLEU-4, METEOR, ROUGE-L, CIDEr, and BERTScore"""
         metrics = {}
         
         # Text quality metrics
-        bleu_scores = []
+        bleu_1_scores = []
+        bleu_4_scores = []
+        meteor_scores = []
+        rouge_l_scores = []
         cider_scores = []
         
         # Compute traditional metrics
         for pred, refs in zip(predictions, references):
-            bleu = self.compute_bleu(refs, pred)
+            bleu_1 = self.compute_bleu_1(refs, pred)
+            bleu_4 = self.compute_bleu_4(refs, pred)
+            meteor = self.compute_meteor(refs, pred, language=language)
+            rouge_l = self.compute_rouge_l(refs, pred)
             cider = self.compute_cider(refs, pred)
-            bleu_scores.append(bleu)
+            
+            bleu_1_scores.append(bleu_1)
+            bleu_4_scores.append(bleu_4)
+            meteor_scores.append(meteor)
+            rouge_l_scores.append(rouge_l)
             cider_scores.append(cider)
         
         # Compute BERTScore with corpus-level IDF
@@ -489,11 +664,17 @@ class EvaluationMetrics:
         bertscore_f1_scores = [result['bertscore_f1'] for result in bertscore_results]
         
         # Average metrics
-        metrics['bleu'] = np.mean(bleu_scores)
+        metrics['bleu_1'] = np.mean(bleu_1_scores)
+        metrics['bleu_4'] = np.mean(bleu_4_scores)
+        metrics['meteor'] = np.mean(meteor_scores)
+        metrics['rouge_l'] = np.mean(rouge_l_scores)
         metrics['cider'] = np.mean(cider_scores)
         metrics['bertscore_precision'] = np.mean(bertscore_precision_scores)
         metrics['bertscore_recall'] = np.mean(bertscore_recall_scores)
         metrics['bertscore_f1'] = np.mean(bertscore_f1_scores)
+        
+        # Backward compatibility: keep old 'bleu' key for existing code
+        metrics['bleu'] = metrics['bleu_4']
         
         # Emotion accuracy
         if predicted_emotions and reference_emotions:

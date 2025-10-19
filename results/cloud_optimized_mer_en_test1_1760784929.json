@@ -1,0 +1,22 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 21:55:29"
+  },
+  "aggregate_metrics": {
+    "total_samples": 5,
+    "processed_samples": 0,
+    "failed_samples": 5,
+    "success_rate": 0.0
+  },
+  "detailed_results": []
+}

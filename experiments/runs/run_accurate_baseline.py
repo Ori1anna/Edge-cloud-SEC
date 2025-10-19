@@ -45,7 +45,7 @@ def run_accurate_edge_baseline(dataset_path: str, output_name: str,
     
     # Initialize Edge model
     print("Initializing Edge model...")
-    edge_model = EdgeModel(device="cuda", dtype="float16")
+    edge_model = EdgeModel(device="cuda", dtype="float32")
     
     # Run experiments
     results = []
@@ -170,7 +170,7 @@ def run_accurate_cloud_baseline(dataset_path: str, output_name: str,
     
     # Initialize Cloud model
     print("Initializing Cloud model...")
-    cloud_model = CloudModel(device="cuda", dtype="float16")
+    cloud_model = CloudModel(device="cuda", dtype="float32")
     
     # Run experiments
     results = []
