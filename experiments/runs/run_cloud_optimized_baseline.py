@@ -116,7 +116,7 @@ def get_prompt_template(prompt_type: str = "default", language: str = "chinese")
 - 使用第三人称或"说话人"等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
-            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"
@@ -241,16 +241,20 @@ def run_cloud_optimized_baseline_experiment(
             
             generation_time = time.time() - start_time
             
+            # Clean generated text: remove newlines, tabs, and strip
+            # This is critical for pycocoevalcap METEOR which writes to temp files
+            generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
+            
             # Get reference text based on caption type
             reference_text = get_caption_field(sample, caption_type, language)
             
             # Calculate evaluation metrics (same as Edge baseline)
             logger.info(f"Calculating metrics for sample {sample.get('file_id', f'sample_{i}')}")
-            bleu_1_score = metrics.compute_bleu_1([reference_text], generated_text)
-            bleu_4_score = metrics.compute_bleu_4([reference_text], generated_text)
+            bleu_1_score = metrics.compute_bleu_1([reference_text], generated_text, language=language)
+            bleu_4_score = metrics.compute_bleu_4([reference_text], generated_text, language=language)
             meteor_score = metrics.compute_meteor([reference_text], generated_text, language=language)
             rouge_l_score = metrics.compute_rouge_l([reference_text], generated_text)
-            cider_score = metrics.compute_cider([reference_text], generated_text)
+            cider_score = metrics.compute_cider([reference_text], generated_text, language=language)
             
             # Store metrics in a dictionary format
             sample_metrics = {
@@ -301,7 +305,26 @@ def run_cloud_optimized_baseline_experiment(
     logger.info("Calculating aggregate metrics...")
     
     if all_metrics:
-        # Calculate corpus-level metrics
+        # Calculate corpus-level metrics using sacrebleu (same as other baselines)
+        import sacrebleu
+        hyps = [r['generated_text'] for r in results]
+        refs_list = [r['reference_text'] for r in results]
+        refs = [[r['reference_text'] for r in results]]
+        
+        # Select tokenization based on language
+        bleu_tokenize = 'zh' if language == 'chinese' else '13a'
+        corpus_bleu_result = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
+        
+        # Extract BLEU-4 and BLEU-1
+        corpus_bleu_4 = corpus_bleu_result.score / 100.0
+        corpus_bleu_1 = corpus_bleu_result.precisions[0] / 100.0
+        
+        # Corpus-level METEOR, ROUGE-L, CIDEr
+        corpus_meteor = metrics.compute_corpus_meteor(hyps, refs_list, language=language)
+        corpus_rouge_l = metrics.compute_corpus_rouge_l(hyps, refs_list)
+        corpus_cider = metrics.compute_corpus_cider(hyps, refs_list, language=language)
+        
+        # Calculate sentence-level metrics (averages)
         avg_bleu_1 = np.mean([m.get('bleu_1', 0.0) for m in all_metrics])
         avg_bleu_4 = np.mean([m.get('bleu_4', 0.0) for m in all_metrics])
         avg_meteor = np.mean([m.get('meteor', 0.0) for m in all_metrics])
@@ -313,6 +336,10 @@ def run_cloud_optimized_baseline_experiment(
         avg_otps = np.mean([r['latency_metrics'].get('otps', 0.0) for r in results])
         avg_total_time = np.mean([r['generation_time'] for r in results])
         avg_output_tokens = np.mean([r['latency_metrics'].get('output_tokens', 0) for r in results])
+        
+        # Extract detailed latency metrics (same as cloud baseline)
+        detailed_latency_data = [r['latency_metrics'] for r in results if r['latency_metrics']]
+        latency_metrics = metrics.compute_detailed_latency_metrics(detailed_latency_data)
         
         aggregate_metrics = {
             'average_bleu_1': avg_bleu_1,
@@ -331,63 +358,93 @@ def run_cloud_optimized_baseline_experiment(
         }
     else:
         logger.warning("No metrics calculated - all samples failed")
+        latency_metrics = {}
         aggregate_metrics = {
             'total_samples': total_samples,
             'processed_samples': 0,
             'failed_samples': failed_samples,
             'success_rate': 0.0
         }
+        # Set corpus-level metrics to 0.0 for consistency
+        corpus_bleu_1 = 0.0
+        corpus_bleu_4 = 0.0
+        corpus_meteor = 0.0
+        corpus_rouge_l = 0.0
+        corpus_cider = 0.0
     
-    # Prepare final results
+    # Prepare final results (same structure as cloud baseline)
     final_results = {
-        'experiment_info': {
-            'experiment_type': 'cloud_optimized_baseline',
-            'model_path': 'Qwen/Qwen2.5-Omni-7B',
-            'device': device,
-            'generation_parameters': {
-                'max_new_tokens': 128,
-                'target_sentences': 2,
-                'min_chars': 90,
-                'min_new_tokens_sc': 48,
-                'prompt_type': prompt_type
-            },
-            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+        'experiment_config': {
+            'dataset_type': dataset_type,
+            'dataset_path': dataset_path,
+            'caption_type': caption_type,
+            'language': language,
+            'prompt_type': prompt_type,
+            'max_samples': max_samples,
+            'total_samples': len(results)
         },
-        'aggregate_metrics': aggregate_metrics,
+        'metrics': {
+            # Corpus-level metrics
+            f'corpus_bleu_1_{language[:2]}': corpus_bleu_1,
+            f'corpus_bleu_4_{language[:2]}': corpus_bleu_4,
+            'corpus_meteor': corpus_meteor,
+            'corpus_rouge_l': corpus_rouge_l,
+            'corpus_cider': corpus_cider,
+            # Sentence-level metrics (averaged)
+            'avg_bleu_1_sentence': aggregate_metrics.get('average_bleu_1', 0.0),
+            'avg_bleu_4_sentence': aggregate_metrics.get('average_bleu_4', 0.0),
+            'avg_meteor_sentence': aggregate_metrics.get('average_meteor', 0.0),
+            'avg_rouge_l_sentence': aggregate_metrics.get('average_rouge_l', 0.0),
+            'avg_cider': aggregate_metrics.get('average_cider', 0.0),
+            # Latency metrics
+            'latency_metrics': latency_metrics
+        },
         'detailed_results': results
     }
     
     # Save results
-    os.makedirs("results", exist_ok=True)
-    output_file = os.path.join("results", f"{output_name}_{int(time.time())}.json")
-    logger.info(f"Saving results to: {output_file}")
+    os.makedirs("experiments/results", exist_ok=True)
+    output_file = os.path.join("experiments/results", f"{output_name}.json")
     
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(final_results, f, ensure_ascii=False, indent=2)
     
-    # Log final results
-    logger.info("=" * 80)
-    logger.info("CLOUD OPTIMIZED BASELINE EXPERIMENT COMPLETED")
-    logger.info("=" * 80)
-    logger.info(f"Total samples: {total_samples}")
-    logger.info(f"Processed successfully: {processed_samples}")
-    logger.info(f"Failed: {failed_samples}")
-    logger.info(f"Success rate: {aggregate_metrics.get('success_rate', 0.0):.2%}")
-    
-    if all_metrics:
-        logger.info("Aggregate Metrics:")
-        logger.info(f"  - Average BLEU-1: {avg_bleu_1:.6f}")
-        logger.info(f"  - Average BLEU-4: {avg_bleu_4:.6f}")
-        logger.info(f"  - Average METEOR: {avg_meteor:.6f}")
-        logger.info(f"  - Average ROUGE-L: {avg_rouge_l:.6f}")
-        logger.info(f"  - Average CIDEr: {avg_cider:.6f}")
-        logger.info("Latency Metrics:")
-        logger.info(f"  - Average TTFT: {avg_ttft:.3f}s")
-        logger.info(f"  - Average OTPS: {avg_otps:.3f} tokens/s")
-        logger.info(f"  - Average Total Time: {avg_total_time:.3f}s")
-        logger.info(f"  - Average Output Tokens: {avg_output_tokens:.1f}")
-    
     logger.info(f"Results saved to: {output_file}")
+    lang_display = "Chinese" if language == 'chinese' else "English"
+    
+    # Log corpus-level metrics
+    logger.info("=" * 80)
+    logger.info("CORPUS-LEVEL METRICS:")
+    logger.info("=" * 80)
+    logger.info(f"Corpus BLEU-1 ({lang_display} tokenization): {final_results['metrics'][f'corpus_bleu_1_{language[:2]}']:.4f}")
+    logger.info(f"Corpus BLEU-4 ({lang_display} tokenization): {final_results['metrics'][f'corpus_bleu_4_{language[:2]}']:.4f}")
+    logger.info(f"Corpus METEOR: {final_results['metrics']['corpus_meteor']:.4f}")
+    logger.info(f"Corpus ROUGE-L: {final_results['metrics']['corpus_rouge_l']:.4f}")
+    logger.info(f"Corpus CIDEr: {final_results['metrics']['corpus_cider']:.4f}")
+    
+    # Log sentence-level metrics
+    logger.info("=" * 80)
+    logger.info("SENTENCE-LEVEL METRICS (AVERAGE):")
+    logger.info("=" * 80)
+    logger.info(f"Average BLEU-1: {final_results['metrics']['avg_bleu_1_sentence']:.4f}")
+    logger.info(f"Average BLEU-4: {final_results['metrics']['avg_bleu_4_sentence']:.4f}")
+    logger.info(f"Average METEOR: {final_results['metrics']['avg_meteor_sentence']:.4f}")
+    logger.info(f"Average ROUGE-L: {final_results['metrics']['avg_rouge_l_sentence']:.4f}")
+    logger.info(f"Average CIDEr: {final_results['metrics']['avg_cider']:.4f}")
+    
+    # Log simplified latency metrics
+    if latency_metrics:
+        logger.info("Latency Metrics (Mean/Min/Max):")
+        logger.info(f"  TTFT: {latency_metrics.get('ttft_mean', 0):.4f}s (min: {latency_metrics.get('ttft_min', 0):.4f}s, max: {latency_metrics.get('ttft_max', 0):.4f}s)")
+        logger.info(f"  ITPS: {latency_metrics.get('itps_mean', 0):.2f} tokens/sec (min: {latency_metrics.get('itps_min', 0):.2f}, max: {latency_metrics.get('itps_max', 0):.2f})")
+        logger.info(f"  OTPS: {latency_metrics.get('otps_mean', 0):.2f} tokens/sec (min: {latency_metrics.get('otps_min', 0):.2f}, max: {latency_metrics.get('otps_max', 0):.2f})")
+        logger.info(f"  OET: {latency_metrics.get('oet_mean', 0):.4f}s (min: {latency_metrics.get('oet_min', 0):.4f}s, max: {latency_metrics.get('oet_max', 0):.4f}s)")
+        logger.info(f"  Total Time: {latency_metrics.get('total_time_mean', 0):.4f}s (min: {latency_metrics.get('total_time_min', 0):.4f}s, max: {latency_metrics.get('total_time_max', 0):.4f}s)")
+        logger.info("Resource Usage (Mean/Min/Max):")
+        logger.info(f"  CPU: {latency_metrics.get('cpu_percent_mean', 0):.1f}% (min: {latency_metrics.get('cpu_percent_min', 0):.1f}%, max: {latency_metrics.get('cpu_percent_max', 0):.1f}%)")
+        logger.info(f"  RAM: {latency_metrics.get('ram_gb_mean', 0):.2f}GB (min: {latency_metrics.get('ram_gb_min', 0):.2f}GB, max: {latency_metrics.get('ram_gb_max', 0):.2f}GB)")
+        logger.info(f"  GPU: {latency_metrics.get('gpu_util_mean', 0):.1f}% (min: {latency_metrics.get('gpu_util_min', 0):.1f}%, max: {latency_metrics.get('gpu_util_max', 0):.1f}%)")
+        logger.info(f"  GPU Memory: {latency_metrics.get('gpu_memory_gb_mean', 0):.2f}GB (min: {latency_metrics.get('gpu_memory_gb_min', 0):.2f}GB, max: {latency_metrics.get('gpu_memory_gb_max', 0):.2f}GB)")
     
     return final_results
 

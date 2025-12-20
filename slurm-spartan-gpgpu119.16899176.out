@@ -1,0 +1,13 @@
+==========================================
+Speculative Decoding Test (5 samples)
+==========================================
+Job ID: 16899176
+Node: spartan-gpgpu119
+Start time: Sun 19 Oct 2025 15:29:23 AEDT
+GPU: NVIDIA A100 80GB PCIe
+==========================================
+Starting Speculative Decoding test...
+==========================================
+Speculative Decoding test completed!
+End time: Sun 19 Oct 2025 15:37:47 AEDT
+==========================================

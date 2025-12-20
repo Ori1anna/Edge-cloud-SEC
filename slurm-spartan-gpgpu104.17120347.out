@@ -1,0 +1,10 @@
+==========================================
+Speculative Decoding Experiment
+==========================================
+Job ID: 17120347
+Node: spartan-gpgpu104
+Start time: Mon 27 Oct 2025 19:30:57 AEDT
+GPU: NVIDIA A100 80GB PCIe
+CUDA Version: Cuda compilation tools, release 12.4, V12.4.131
+==========================================
+Starting Speculative Decoding experiment...

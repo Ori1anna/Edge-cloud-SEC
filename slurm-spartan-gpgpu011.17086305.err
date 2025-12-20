@@ -1,0 +1,529 @@
+/data/gpfs/projects/punim2341/jiajunlu/conda/envs/sec-gpu/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[nltk_data] Downloading package wordnet to /home/jiajunlu/nltk_data...
+[nltk_data]   Package wordnet is already up-to-date!
+[nltk_data] Downloading package omw-1.4 to /home/jiajunlu/nltk_data...
+[nltk_data]   Package omw-1.4 is already up-to-date!
+INFO:__main__:Loading unified manifest from data/processed/mer2024/manifest_audio_text_augmented_v5.json
+INFO:__main__:Loaded 332 samples from unified manifest
+INFO:__main__:Processing 332 samples with CPU-limited edge model
+INFO:__main__:Caption type: audio_only
+INFO:__main__:Language: english
+INFO:__main__:Prompt type: detailed
+INFO:__main__:Hardware limits: 2 cores, 16.0GB memory
+INFO:__main__:Hardware Limiter initialized:
+INFO:__main__:  Original CPU cores: 64
+INFO:__main__:  Original memory: 1006.9GB
+INFO:__main__:  Limited CPU cores: 2
+INFO:__main__:  Limited memory: 16.0GB
+INFO:__main__:Using device: cpu
+INFO:__main__:Initializing LimitedEdgeModel with device=cpu, dtype=float32
+INFO:src.models.edge_model:Initializing EdgeModel with model_name=Qwen/Qwen2.5-Omni-3B, device=cpu, dtype=float32
+INFO:src.models.edge_model:Loading edge model: Qwen/Qwen2.5-Omni-3B
+INFO:src.models.edge_model:This may take several minutes for the first time...
+INFO:src.models.edge_model:Loading processor...
+You have video processor config saved in `preprocessor.json` file which is deprecated. Video processor configs should be saved in their own `video_preprocessor.json` file. You can rename the file or load and save the processor back which renames it automatically. Loading from `preprocessor.json` will be removed in v5.0.
+INFO:src.models.edge_model:Processor loaded successfully
+INFO:src.models.edge_model:Loading model (this may take a while)...
+Unrecognized keys in `rope_scaling` for 'rope_type'='default': {'mrope_section'}
+Qwen2_5OmniToken2WavModel does not support eager attention implementation, fall back to sdpa
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:42<01:24, 42.09s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [01:24<00:42, 42.42s/it]Loading checkpoint shards: 100%|██████████| 3/3 [01:32<00:00, 26.48s/it]Loading checkpoint shards: 100%|██████████| 3/3 [01:32<00:00, 30.75s/it]
+INFO:src.models.edge_model:Edge model loaded successfully
+INFO:src.models.edge_model:EdgeModel initialization completed successfully
+INFO:__main__:Applied CPU optimizations with 2 threads
+INFO:__main__:Using prompt template: As an expert in the field of emotions, please focus on the acoustic information in the audio to disc...
+INFO:__main__:Processing sample 1/332: sample_00000000
+INFO:__main__:Using Speculative Decoding Edge logic for sample sample_00000000
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Using Speculative Decoding Edge logic for Edge Baseline generation
+INFO:src.models.edge_model:This ensures 100% alignment with Speculative Decoding's Edge generation
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)
+INFO:src.models.edge_model:Cloud model will be set to None (not needed for Edge-only mode)
+INFO:src.models.edge_model:Detected language from prompt: english
+INFO:src.speculative_decoding:Running in Edge-only mode (cloud_model=None)
+INFO:src.speculative_decoding:Initialized SimpleSpeculativeDecoding with entropy_threshold=999.0, k=5, target_sentences=2, language=english, prompt_type=detailed
+INFO:src.models.edge_model:Generating with Edge-only mode:
+INFO:src.models.edge_model:  - max_new_tokens=128
+INFO:src.models.edge_model:  - target_sentences=2
+INFO:src.models.edge_model:  - min_chars=90
+INFO:src.models.edge_model:  - min_new_tokens_sc=48
+INFO:src.models.edge_model:  - prompt_type=detailed
+INFO:src.speculative_decoding:Speculative Decoding prompt: ['<|im_start|>system\nYou are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.<|im_end|>\n<|im_start|>user\n<|audio_bos|><|AUDIO|><|audio_eos|>As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual.<|im_end|>\n<|im_start|>assistant\n']
+INFO:src.speculative_decoding:Input keys: ['input_ids', 'attention_mask', 'feature_attention_mask', 'input_features']
+INFO:src.speculative_decoding:Audio features shape: torch.Size([1, 128, 30000])
+INFO:src.speculative_decoding:Starting speculative decoding with max_new_tokens=128
+INFO:src.speculative_decoding:Performing multimodal prefill for efficient incremental generation...
+INFO:src.speculative_decoding:Performing multimodal prefill with Edge model...
+INFO:src.speculative_decoding:Edge prefill completed in 3.828s
+INFO:src.speculative_decoding:Multimodal prefill completed in 3.831s
+INFO:src.speculative_decoding:Added stopping criteria for english with sentence_end_chars=('.',), min_chars=90, min_new_tokens=48, prompt_type=detailed
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=0/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: 'The'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [785, 1697, 4977, 5008, 35118]
+INFO:src.speculative_decoding:Token uncertainties: [3.4791622161865234, 2.2164700031280518, 2.1409518718719482, 1.284088134765625, 4.853043079376221]
+INFO:src.speculative_decoding:Low uncertainty (4.853 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=5, check_sequence_len=185
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=5/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [13, 10964, 16232, 374, 14400]
+INFO:src.speculative_decoding:Token uncertainties: [1.6895653009414673, 2.4490232467651367, 1.9185459613800049, 1.2733855247497559, 3.1391210556030273]
+INFO:src.speculative_decoding:Low uncertainty (3.139 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=10, check_sequence_len=190
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=10/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [70460, 979, 807, 1977, 330]
+INFO:src.speculative_decoding:Token uncertainties: [2.5444231033325195, 1.2721381187438965, 1.5076768398284912, 0.4705263078212738, 1.354881763458252]
+INFO:src.speculative_decoding:Low uncertainty (2.544 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=15, check_sequence_len=195
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=15/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [35946, 99459, 99392, 103924, 1]
+INFO:src.speculative_decoding:Token uncertainties: [0.7806749939918518, 0.6323063969612122, 0.041460681706666946, 0.2510654628276825, 1.1537630558013916]
+INFO:src.speculative_decoding:Low uncertainty (1.154 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=20, check_sequence_len=200
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=20/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [3837, 8206, 46918, 17267, 438]
+INFO:src.speculative_decoding:Token uncertainties: [1.4140037298202515, 2.8806328773498535, 2.447845697402954, 0.3541516959667206, 0.5110021233558655]
+INFO:src.speculative_decoding:Low uncertainty (2.881 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=25, check_sequence_len=205
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=25/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [364, 40, 1513, 944, 1414]
+INFO:src.speculative_decoding:Token uncertainties: [0.37021827697753906, 0.22417058050632477, 0.24467253684997559, 0.021625783294439316, 0.1421053111553192]
+INFO:src.speculative_decoding:Low uncertainty (0.370 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=30, check_sequence_len=210
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=30/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [4427, 1096, 13230, 429, 1052]
+INFO:src.speculative_decoding:Token uncertainties: [2.474355936050415, 2.338731288909912, 2.7281949520111084, 1.1627118587493896, 0.6118156909942627]
+INFO:src.speculative_decoding:Low uncertainty (2.728 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=35, check_sequence_len=215
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=35/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' or'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [594, 1045, 10492, 476, 26826]
+INFO:src.speculative_decoding:Token uncertainties: [1.3016074895858765, 0.5829368233680725, 2.7685203552246094, 0.7403615713119507, 2.490870475769043]
+INFO:src.speculative_decoding:Low uncertainty (2.769 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=40, check_sequence_len=220
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=40/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' in'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [304, 862, 3971, 13, 2379]
+INFO:src.speculative_decoding:Token uncertainties: [1.5913059711456299, 0.6213725805282593, 2.1344120502471924, 0.6747484803199768, 3.254767417907715]
+INFO:src.speculative_decoding:Low uncertainty (3.255 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=45, check_sequence_len=225
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=45/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [1083, 6286, 537, 3432, 3139]
+INFO:src.speculative_decoding:Token uncertainties: [1.0201441049575806, 1.9785486459732056, 1.8556777238845825, 0.017237570136785507, 1.969411849975586]
+INFO:src.speculative_decoding:Low uncertainty (1.979 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=50, check_sequence_len=230
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=50/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [11, 892, 4623, 14807, 264]
+INFO:src.speculative_decoding:Token uncertainties: [0.8580759763717651, 2.364384174346924, 2.18501877784729, 2.2736055850982666, 1.8705538511276245]
+INFO:src.speculative_decoding:Low uncertainty (2.364 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=55, check_sequence_len=235
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=55/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' of'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [6853, 315, 12136, 13, 27893]
+INFO:src.speculative_decoding:Token uncertainties: [0.44304439425468445, 0.0015918860444799066, 1.2748464345932007, 1.2114511728286743, 2.1567490100860596]
+INFO:src.speculative_decoding:Low uncertainty (2.157 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=60, check_sequence_len=240
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=60/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' the'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [358, 4172, 7023, 279, 3842]
+INFO:src.speculative_decoding:Token uncertainties: [0.016638481989502907, 0.8888506889343262, 0.5686829090118408, 1.1492279767990112, 1.1949013471603394]
+INFO:src.speculative_decoding:Low uncertainty (1.195 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=65, check_sequence_len=245
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=65/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' to'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [311, 387, 8266, 74599, 13]
+INFO:src.speculative_decoding:Token uncertainties: [1.1670732498168945, 0.12458894401788712, 1.8956186771392822, 2.2769312858581543, 1.5628262758255005]
+INFO:src.speculative_decoding:Low uncertainty (2.277 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=70, check_sequence_len=250
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=70/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [3555, 653, 498, 1744, 30]
+INFO:src.speculative_decoding:Token uncertainties: [1.7248938083648682, 0.7487432956695557, 0.0002795679320115596, 0.0014229204971343279, 0.9668546915054321]
+INFO:src.speculative_decoding:Low uncertainty (1.725 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=75, check_sequence_len=255
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=75/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [3155, 498, 614, 894, 1008]
+INFO:src.speculative_decoding:Token uncertainties: [1.0247184038162231, 0.0030416310764849186, 1.0918726921081543, 0.31227731704711914, 0.9476833939552307]
+INFO:src.speculative_decoding:Low uncertainty (1.092 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=80, check_sequence_len=260
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=80/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' on'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [11303, 389, 419, 30, 151645]
+INFO:src.speculative_decoding:Token uncertainties: [2.9725606441497803, 0.8655297756195068, 0.8092527389526367, 1.055076241493225, 0.0022856586147099733]
+INFO:src.speculative_decoding:Low uncertainty (2.973 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Stop condition met in accepted token 151645, stopping generation
+INFO:src.speculative_decoding:Speculative decoding completed: 85 tokens, 0 cloud calls, 0 corrections
+INFO:src.models.edge_model:Edge-only generation completed in 32.182s
+INFO:src.models.edge_model:Generated text: The person seems quite uncertain. Their tone is somewhat hesitant when they say "我哪知道啊"，which translates roughly as 'I don't know'. This suggests that there's some doubt or uncertainty in their mind. They also mention not having experience, which further indicates a lack of confidence. Overall I'd predict the individual to be feeling doubtful. What do you think? Do you have any other thoughts on this?
+INFO:src.models.edge_model:Total cloud calls: 0 (should be 0)
+INFO:absl:Using default tokenizer.
+INFO:__main__:Sample 1:
+INFO:__main__:  Reference: In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area." This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.
+INFO:__main__:  Generated: The person seems quite uncertain. Their tone is somewhat hesitant when they say "我哪知道啊"，which translates roughly as 'I don't know'. This suggests that there's some doubt or uncertainty in their mind. They also mention not having experience, which further indicates a lack of confidence. Overall I'd predict the individual to be feeling doubtful. What do you think? Do you have any other thoughts on this?
+INFO:__main__:  BLEU-1: 0.1363
+INFO:__main__:  BLEU-4: 0.0095
+INFO:__main__:  METEOR: 0.0703
+INFO:__main__:  ROUGE-L: 0.1244
+INFO:__main__:  CIDEr: 0.0000
+INFO:__main__:  BERTScore: Computing in batch...
+INFO:__main__:  TTFT: 5.4911s
+INFO:__main__:  Total Time: 32.1756s
+INFO:__main__:  CPU Usage: 0.0% (max: 0.0%)
+INFO:__main__:  Memory Usage: 0.00GB (max: 0.00GB)
+INFO:__main__:
+INFO:__main__:Processing sample 2/332: sample_00000007
+INFO:__main__:Using Speculative Decoding Edge logic for sample sample_00000007
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Using Speculative Decoding Edge logic for Edge Baseline generation
+INFO:src.models.edge_model:This ensures 100% alignment with Speculative Decoding's Edge generation
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)
+INFO:src.models.edge_model:Cloud model will be set to None (not needed for Edge-only mode)
+INFO:src.models.edge_model:Detected language from prompt: english
+INFO:src.speculative_decoding:Running in Edge-only mode (cloud_model=None)
+INFO:src.speculative_decoding:Initialized SimpleSpeculativeDecoding with entropy_threshold=999.0, k=5, target_sentences=2, language=english, prompt_type=detailed
+INFO:src.models.edge_model:Generating with Edge-only mode:
+INFO:src.models.edge_model:  - max_new_tokens=128
+INFO:src.models.edge_model:  - target_sentences=2
+INFO:src.models.edge_model:  - min_chars=90
+INFO:src.models.edge_model:  - min_new_tokens_sc=48
+INFO:src.models.edge_model:  - prompt_type=detailed
+INFO:src.speculative_decoding:Speculative Decoding prompt: ['<|im_start|>system\nYou are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.<|im_end|>\n<|im_start|>user\n<|audio_bos|><|AUDIO|><|audio_eos|>As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual.<|im_end|>\n<|im_start|>assistant\n']
+INFO:src.speculative_decoding:Input keys: ['input_ids', 'attention_mask', 'feature_attention_mask', 'input_features']
+INFO:src.speculative_decoding:Audio features shape: torch.Size([1, 128, 30000])
+INFO:src.speculative_decoding:Starting speculative decoding with max_new_tokens=128
+INFO:src.speculative_decoding:Performing multimodal prefill for efficient incremental generation...
+INFO:src.speculative_decoding:Performing multimodal prefill with Edge model...
+INFO:src.speculative_decoding:Edge prefill completed in 4.806s
+INFO:src.speculative_decoding:Multimodal prefill completed in 4.811s
+INFO:src.speculative_decoding:Added stopping criteria for english with sentence_end_chars=('.',), min_chars=90, min_new_tokens=48, prompt_type=detailed
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=0/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: 'The'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [785, 1697, 4977, 5008, 6247]
+INFO:src.speculative_decoding:Token uncertainties: [3.7833359241485596, 2.8121578693389893, 2.026155710220337, 1.0891361236572266, 2.8524482250213623]
+INFO:src.speculative_decoding:Low uncertainty (3.783 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=5, check_sequence_len=216
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=5/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' The'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [13, 576, 16232, 374, 70314]
+INFO:src.speculative_decoding:Token uncertainties: [1.379328966140747, 2.2858340740203857, 3.308751344680786, 1.1087249517440796, 2.9043285846710205]
+INFO:src.speculative_decoding:Low uncertainty (3.309 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=10, check_sequence_len=221
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=10/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [11, 1075, 807, 2299, 3330]
+INFO:src.speculative_decoding:Token uncertainties: [0.933204710483551, 2.6702401638031006, 2.1852829456329346, 1.1137553453445435, 2.962925672531128]
+INFO:src.speculative_decoding:Low uncertainty (2.963 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=15, check_sequence_len=226
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=15/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' to'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [4637, 311, 2494, 13, 2619]
+INFO:src.speculative_decoding:Token uncertainties: [0.015134649351239204, 0.08290839940309525, 1.6991302967071533, 2.4452767372131348, 2.6233956813812256]
+INFO:src.speculative_decoding:Low uncertainty (2.623 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=20, check_sequence_len=231
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=20/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' an'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [594, 458, 84673, 4271, 311]
+INFO:src.speculative_decoding:Token uncertainties: [0.7512032389640808, 1.1953518390655518, 3.619255542755127, 2.364895820617676, 0.6319049000740051]
+INFO:src.speculative_decoding:Low uncertainty (3.619 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=25, check_sequence_len=236
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=25/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [862, 8806, 11, 892, 5990]
+INFO:src.speculative_decoding:Token uncertainties: [0.9321513772010803, 1.2826404571533203, 2.0368943214416504, 2.468427896499634, 2.6938233375549316]
+INFO:src.speculative_decoding:Low uncertainty (2.694 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=30, check_sequence_len=241
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=30/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [14807, 6785, 15650, 13, 2055]
+INFO:src.speculative_decoding:Token uncertainties: [1.7301734685897827, 1.461476445198059, 0.46981874108314514, 1.4340622425079346, 2.941288709640503]
+INFO:src.speculative_decoding:Low uncertainty (2.941 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=35, check_sequence_len=246
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=35/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [358, 4172, 1977, 419, 1697]
+INFO:src.speculative_decoding:Token uncertainties: [0.4466964900493622, 0.7893843054771423, 0.8246525526046753, 1.2578697204589844, 0.49696698784828186]
+INFO:src.speculative_decoding:Low uncertainty (1.258 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=40, check_sequence_len=251
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=40/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' in'
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' a'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [374, 304, 264, 1661, 19671]
+INFO:src.speculative_decoding:Token uncertainties: [0.25945231318473816, 1.5548123121261597, 0.1189689114689827, 1.049973726272583, 0.8299057483673096]
+INFO:src.speculative_decoding:Low uncertainty (1.555 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=45, check_sequence_len=256
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=45/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [13, 3555, 653, 498, 1744]
+INFO:src.speculative_decoding:Token uncertainties: [1.6245990991592407, 0.8189076781272888, 0.668797492980957, 0.00017470611783210188, 0.0024659971240907907]
+INFO:src.speculative_decoding:Low uncertainty (1.625 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=50, check_sequence_len=261
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=50/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [30, 3155, 498, 614, 894]
+INFO:src.speculative_decoding:Token uncertainties: [0.43647313117980957, 1.2278214693069458, 0.005217135883867741, 1.5990463495254517, 0.5735336542129517]
+INFO:src.speculative_decoding:Low uncertainty (1.599 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=55, check_sequence_len=266
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=55/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' for'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [1008, 7699, 10469, 369, 752]
+INFO:src.speculative_decoding:Token uncertainties: [0.7013177871704102, 2.505751848220825, 1.9925261735916138, 1.8718326091766357, 0.21905387938022614]
+INFO:src.speculative_decoding:Low uncertainty (2.506 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=60, check_sequence_len=271
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=60/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+WARNING:src.speculative_decoding:Blocking repetition of common English word: ' to'
+INFO:src.speculative_decoding:Edge generated 5 tokens: [311, 23643, 30, 151645, 198]
+INFO:src.speculative_decoding:Token uncertainties: [0.007540547288954258, 0.9740080237388611, 0.011950869113206863, 0.002206526231020689, 1.5895970136625692e-05]
+INFO:src.speculative_decoding:Low uncertainty (0.974 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Stop condition met in accepted token 151645, stopping generation
+INFO:src.speculative_decoding:Speculative decoding completed: 65 tokens, 0 cloud calls, 0 corrections
+INFO:src.models.edge_model:Edge-only generation completed in 27.098s
+INFO:src.models.edge_model:Generated text: The person seems quite happy. The tone is cheerful, like they're looking forward to something. There's an upbeat quality to their speech, which usually indicates positive feelings. So I'd say this person is in a good mood. What do you think? Do you have any other audio samples for me to analyze?
+INFO:src.models.edge_model:Total cloud calls: 0 (should be 0)
+INFO:absl:Using default tokenizer.
+INFO:__main__:Sample 2:
+INFO:__main__:  Reference: In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.
+INFO:__main__:  Generated: The person seems quite happy. The tone is cheerful, like they're looking forward to something. There's an upbeat quality to their speech, which usually indicates positive feelings. So I'd say this person is in a good mood. What do you think? Do you have any other audio samples for me to analyze?
+INFO:__main__:  BLEU-1: 0.1941
+INFO:__main__:  BLEU-4: 0.0145
+INFO:__main__:  METEOR: 0.1005
+INFO:__main__:  ROUGE-L: 0.1690
+INFO:__main__:  CIDEr: 0.0000
+INFO:__main__:  BERTScore: Computing in batch...
+INFO:__main__:  TTFT: 6.5486s
+INFO:__main__:  Total Time: 27.0982s
+INFO:__main__:  CPU Usage: 0.0% (max: 0.0%)
+INFO:__main__:  Memory Usage: 0.00GB (max: 0.00GB)
+INFO:__main__:
+INFO:__main__:Processing sample 3/332: sample_00000021
+INFO:__main__:Using Speculative Decoding Edge logic for sample sample_00000021
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Using Speculative Decoding Edge logic for Edge Baseline generation
+INFO:src.models.edge_model:This ensures 100% alignment with Speculative Decoding's Edge generation
+INFO:src.models.edge_model:================================================================================
+INFO:src.models.edge_model:Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)
+INFO:src.models.edge_model:Cloud model will be set to None (not needed for Edge-only mode)
+INFO:src.models.edge_model:Detected language from prompt: english
+INFO:src.speculative_decoding:Running in Edge-only mode (cloud_model=None)
+INFO:src.speculative_decoding:Initialized SimpleSpeculativeDecoding with entropy_threshold=999.0, k=5, target_sentences=2, language=english, prompt_type=detailed
+INFO:src.models.edge_model:Generating with Edge-only mode:
+INFO:src.models.edge_model:  - max_new_tokens=128
+INFO:src.models.edge_model:  - target_sentences=2
+INFO:src.models.edge_model:  - min_chars=90
+INFO:src.models.edge_model:  - min_new_tokens_sc=48
+INFO:src.models.edge_model:  - prompt_type=detailed
+INFO:src.speculative_decoding:Speculative Decoding prompt: ['<|im_start|>system\nYou are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech.<|im_end|>\n<|im_start|>user\n<|audio_bos|><|AUDIO|><|audio_eos|>As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual.<|im_end|>\n<|im_start|>assistant\n']
+INFO:src.speculative_decoding:Input keys: ['input_ids', 'attention_mask', 'feature_attention_mask', 'input_features']
+INFO:src.speculative_decoding:Audio features shape: torch.Size([1, 128, 30000])
+INFO:src.speculative_decoding:Starting speculative decoding with max_new_tokens=128
+INFO:src.speculative_decoding:Performing multimodal prefill for efficient incremental generation...
+INFO:src.speculative_decoding:Performing multimodal prefill with Edge model...
+INFO:src.speculative_decoding:Edge prefill completed in 3.694s
+INFO:src.speculative_decoding:Multimodal prefill completed in 3.699s
+INFO:src.speculative_decoding:Added stopping criteria for english with sentence_end_chars=('.',), min_chars=90, min_new_tokens=48, prompt_type=detailed
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=0/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [45181, 107083, 111268, 100192, 3837]
+INFO:src.speculative_decoding:Token uncertainties: [4.6935906410217285, 3.1061840057373047, 1.5176039934158325, 2.5634267330169678, 0.3882295787334442]
+INFO:src.speculative_decoding:Low uncertainty (4.694 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=5, check_sequence_len=184
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=5/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [104283, 17340, 108876, 20412, 106837]
+INFO:src.speculative_decoding:Token uncertainties: [1.8725934028625488, 1.817992925643921, 2.6149778366088867, 2.8080878257751465, 1.667912244796753]
+INFO:src.speculative_decoding:Low uncertainty (2.808 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=10, check_sequence_len=189
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=10/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [9370, 1773, 80443, 100687, 105694]
+INFO:src.speculative_decoding:Token uncertainties: [0.07584291696548462, 0.3266710937023163, 3.141822576522827, 3.0414416790008545, 2.489731550216675]
+INFO:src.speculative_decoding:Low uncertainty (3.142 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=15, check_sequence_len=194
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=15/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [100631, 117911, 105437, 1773, 110098]
+INFO:src.speculative_decoding:Token uncertainties: [0.9450398683547974, 2.858424425125122, 1.6405668258666992, 0.6627268195152283, 3.7926888465881348]
+WARNING:src.speculative_decoding:Language mismatch detected: expecting English but generated Chinese text
+WARNING:src.speculative_decoding:Draft text: 或者沮丧的表现。语气...
+WARNING:src.speculative_decoding:Forcing cloud verification to correct language
+WARNING:src.speculative_decoding:Cloud verification requested but cloud_model is None (Edge-only mode)
+WARNING:src.speculative_decoding:Accepting all Edge tokens instead
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=20, check_sequence_len=199
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=20/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [49111, 33108, 29490, 18493, 112225]
+INFO:src.speculative_decoding:Token uncertainties: [1.8725874423980713, 0.4838493764400482, 0.13432247936725616, 2.6990580558776855, 2.5948503017425537]
+INFO:src.speculative_decoding:Low uncertainty (2.699 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=25, check_sequence_len=204
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=25/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [101888, 99557, 30709, 100410, 104080]
+INFO:src.speculative_decoding:Token uncertainties: [2.807467460632324, 2.560781240463257, 0.7694898247718811, 0.029524875804781914, 0.8444320559501648]
+INFO:src.speculative_decoding:Low uncertainty (2.807 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=30, check_sequence_len=209
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=30/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [103976, 1773, 99999, 104538, 99487]
+INFO:src.speculative_decoding:Token uncertainties: [1.9795986413955688, 0.6975246071815491, 3.924154758453369, 2.242292642593384, 2.8057353496551514]
+WARNING:src.speculative_decoding:Language mismatch detected: expecting English but generated Chinese text
+WARNING:src.speculative_decoding:Draft text: 的事情。所以预测这个...
+WARNING:src.speculative_decoding:Forcing cloud verification to correct language
+WARNING:src.speculative_decoding:Cloud verification requested but cloud_model is None (Edge-only mode)
+WARNING:src.speculative_decoding:Accepting all Edge tokens instead
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=35, check_sequence_len=214
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=35/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [103947, 44091, 104583, 99792, 108056]
+INFO:src.speculative_decoding:Token uncertainties: [1.1034469604492188, 2.1903371810913086, 1.4647369384765625, 1.6585127115249634, 1.5727853775024414]
+WARNING:src.speculative_decoding:Language mismatch detected: expecting English but generated Chinese text
+WARNING:src.speculative_decoding:Draft text: 人的状态应该是比较冷静...
+WARNING:src.speculative_decoding:Forcing cloud verification to correct language
+WARNING:src.speculative_decoding:Cloud verification requested but cloud_model is None (Edge-only mode)
+WARNING:src.speculative_decoding:Accepting all Edge tokens instead
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=40, check_sequence_len=219
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=40/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [3837, 16530, 99508, 103386, 99744]
+INFO:src.speculative_decoding:Token uncertainties: [1.6275415420532227, 3.324124813079834, 2.34248948097229, 0.5696961879730225, 1.5061559677124023]
+INFO:src.speculative_decoding:Low uncertainty (3.324 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=45, check_sequence_len=224
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=45/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [107115, 1773, 56568, 104806, 100626]
+INFO:src.speculative_decoding:Token uncertainties: [3.881526470184326, 1.088273286819458, 2.2310538291931152, 0.42864659428596497, 0.45244619250297546]
+INFO:src.speculative_decoding:Low uncertainty (3.882 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=50, check_sequence_len=229
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=50/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [109909, 105761, 101042, 86119, 3837]
+INFO:src.speculative_decoding:Token uncertainties: [1.720870018005371, 0.3793993294239044, 1.1354738473892212, 1.3928303718566895, 0.5204207897186279]
+WARNING:src.speculative_decoding:Language mismatch detected: expecting English but generated Chinese text
+WARNING:src.speculative_decoding:Draft text: 类似的语音分析问题，...
+WARNING:src.speculative_decoding:Forcing cloud verification to correct language
+WARNING:src.speculative_decoding:Cloud verification requested but cloud_model is None (Edge-only mode)
+WARNING:src.speculative_decoding:Accepting all Edge tokens instead
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=55, check_sequence_len=234
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=55/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [104570, 114817, 104170, 93, 1773]
+INFO:src.speculative_decoding:Token uncertainties: [1.6855430603027344, 0.4070011377334595, 0.5614895224571228, 0.006391861941665411, 0.027862830087542534]
+INFO:src.speculative_decoding:Low uncertainty (1.686 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Checking stopping criteria: generated_tokens=60, check_sequence_len=239
+INFO:src.speculative_decoding:Stopping criteria check result: False
+INFO:src.speculative_decoding:=== Generation Loop Iteration: generated_tokens=60/128 ===
+INFO:src.speculative_decoding:Edge generating 5 draft tokens incrementally...
+INFO:src.speculative_decoding:Using incremental generation with KV cache
+INFO:src.speculative_decoding:Edge generated 5 tokens: [151645, 198, 151643, 33975, 25]
+INFO:src.speculative_decoding:Token uncertainties: [0.0007500398205593228, 2.4131895770551637e-05, 6.557998858625069e-05, 3.7901411056518555, 0.055602625012397766]
+INFO:src.speculative_decoding:Low uncertainty (3.790 <= 999.0), accepting all Edge tokens
+INFO:src.speculative_decoding:Stop condition met in accepted token 151645, stopping generation
+INFO:src.speculative_decoding:Speculative decoding completed: 65 tokens, 0 cloud calls, 0 corrections
+INFO:src.models.edge_model:Edge-only generation completed in 25.793s
+INFO:src.models.edge_model:Generated text: 从这段音频来看，说话人的情绪是平静的。没有明显激动或者沮丧的表现。语气平和地在谈论关于跟小川在一起的事情。所以预测这个人的状态应该是比较冷静，不急躁也不焦虑。你要是还有类似的语音分析问题，都可以跟我说哦~。
+Human:
+INFO:src.models.edge_model:Total cloud calls: 0 (should be 0)
+ERROR:src.evaluation.metrics:Error computing METEOR: could not convert string to float: b'Error: specify SCORE or EVAL or SING'
+[2025-10-27T10:14:28.017] error: *** JOB 17086305 ON spartan-gpgpu011 CANCELLED AT 2025-10-27T10:14:28 DUE TO TIME LIMIT ***

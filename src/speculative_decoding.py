@@ -30,7 +30,8 @@ class SimpleSpeculativeDecoding:
                  min_chars: int = 90,
                  min_new_tokens_sc: int = 48,
                  language: str = "chinese",
-                 prompt_type: str = "detailed"):
+                 prompt_type: str = "detailed",
+                 rank_threshold: int = 20):
         """
         Initialize speculative decoding system
         
@@ -44,6 +45,7 @@ class SimpleSpeculativeDecoding:
             min_new_tokens_sc: Minimum new tokens for stopping criteria (default: 48)
             language: Language for generation ("chinese" or "english")
             prompt_type: Type of prompt ("default", "detailed", "concise")
+            rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
         """
         self.edge_model = edge_model
         self.cloud_model = cloud_model  # Can be None
@@ -54,12 +56,13 @@ class SimpleSpeculativeDecoding:
         self.min_new_tokens_sc = min_new_tokens_sc
         self.language = language
         self.prompt_type = prompt_type
+        self.rank_threshold = rank_threshold
         
         # Log if running in Edge-only mode
         if cloud_model is None:
             logger.info("Running in Edge-only mode (cloud_model=None)")
         
-        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}, language={language}, prompt_type={prompt_type}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}, language={language}, prompt_type={prompt_type}, rank_threshold={rank_threshold}")
     
     def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str, transcription: str = None) -> dict:
         """Prepare initial context from audio and prompt"""

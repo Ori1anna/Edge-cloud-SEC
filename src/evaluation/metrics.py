@@ -40,6 +40,16 @@ except ImportError:
     ROUGE_AVAILABLE = False
     logger.warning("ROUGE not available. Install with: pip install rouge-score")
 
+# PyCOCOEvalCap imports
+try:
+    from pycocoevalcap.meteor.meteor import Meteor
+    from pycocoevalcap.cider.cider import Cider
+    PYCOCOEVALCAP_AVAILABLE = True
+    logger.info("PyCOCOEvalCap is available")
+except ImportError:
+    PYCOCOEVALCAP_AVAILABLE = False
+    logger.warning("PyCOCOEvalCap not available. Install with: pip install pycocoevalcap")
+
 # Download required NLTK data
 try:
     nltk.data.find('tokenizers/punkt')
@@ -64,17 +74,23 @@ class EvaluationMetrics:
         self.smoothing = SmoothingFunction().method1
         self.bertscorer_cache = {}  # Cache for BERTScorer objects
     
-    def compute_bleu(self, references: List[str], hypothesis: str, n_gram: int = 4) -> float:
-        """Compute BLEU-n score (default BLEU-4)"""
+    def compute_bleu(self, references: List[str], hypothesis: str, language: str = "chinese", n_gram: int = 4) -> float:
+        """Compute BLEU-n score with language-aware tokenization"""
         try:
             # Clean hypothesis text (remove special tokens)
             hypothesis = hypothesis.replace('<|im_end|>', '').strip()
             
-            # Use character-level tokenization for Chinese text
-            ref_tokens = [list(ref.lower()) for ref in references]
-            hyp_tokens = list(hypothesis.lower())
-            
-            # Debug logging
+            # 根据语言选择分词方式
+            if language.lower() in ["english", "en"]:
+                # 英文使用词语级分词
+                ref_tokens = [word_tokenize(ref.lower()) for ref in references]
+                hyp_tokens = word_tokenize(hypothesis.lower())
+            else:
+                # 中文或其他语言使用字符级分词
+                ref_tokens = [list(ref.lower()) for ref in references]
+                hyp_tokens = list(hypothesis.lower())
+
+            logger.debug(f"Language: {language}, Tokenization: {'word' if language.lower() in ['english', 'en'] else 'character'}")
             logger.debug(f"Reference tokens: {ref_tokens}")
             logger.debug(f"Hypothesis tokens: {hyp_tokens}")
             
@@ -88,48 +104,18 @@ class EvaluationMetrics:
             logger.error(f"Error computing BLEU-{n_gram}: {e}")
             return 0.0
     
-    def compute_bleu_1(self, references: List[str], hypothesis: str) -> float:
+    def compute_bleu_1(self, references: List[str], hypothesis: str, language: str = "chinese") -> float:
         """Compute BLEU-1 score"""
-        return self.compute_bleu(references, hypothesis, n_gram=1)
+        return self.compute_bleu(references, hypothesis, language=language, n_gram=1)
     
-    def compute_bleu_4(self, references: List[str], hypothesis: str) -> float:
+    def compute_bleu_4(self, references: List[str], hypothesis: str, language: str = "chinese") -> float:
         """Compute BLEU-4 score"""
-        return self.compute_bleu(references, hypothesis, n_gram=4)
+        return self.compute_bleu(references, hypothesis, language=language, n_gram=4)
     
-    def compute_cider(self, references: List[str], hypothesis: str) -> float:
-        """Compute CIDEr score (simplified version)"""
-        # This is a simplified CIDEr implementation
-        # For full implementation, consider using pycocoevalcap
-        try:
-            # Use character-level tokenization for Chinese text
-            ref_tokens = [list(ref.lower()) for ref in references]
-            hyp_tokens = list(hypothesis.lower())
-            
-            # Simple TF-IDF based scoring
-            all_tokens = set()
-            for ref in ref_tokens:
-                all_tokens.update(ref)
-            all_tokens.update(hyp_tokens)
-            
-            # Compute TF-IDF vectors
-            ref_vectors = []
-            for ref in ref_tokens:
-                vector = [ref.count(token) for token in all_tokens]
-                ref_vectors.append(vector)
-            
-            hyp_vector = [hyp_tokens.count(token) for token in all_tokens]
-            
-            # Compute cosine similarity
-            similarities = []
-            for ref_vec in ref_vectors:
-                similarity = self._cosine_similarity(ref_vec, hyp_vector)
-                similarities.append(similarity)
-            
-            return np.mean(similarities) if similarities else 0.0
-            
-        except Exception as e:
-            logger.error(f"Error computing CIDEr: {e}")
-            return 0.0
+    def compute_cider(self, references: List[str], hypothesis: str, language: str = "chinese") -> float:
+        """Compute CIDEr score - DISABLED, returns 0.0"""
+        # CIDEr calculation disabled per user request
+        return 0.0
     
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Compute cosine similarity between two vectors"""
@@ -157,59 +143,112 @@ class EvaluationMetrics:
         Returns:
             METEOR score
         """
-        if not METEOR_AVAILABLE:
-            logger.warning("METEOR not available, returning zero score")
-            return 0.0
+        # Use pycocoevalcap METEOR if available and Java is installed
+        use_pycocoevalcap = PYCOCOEVALCAP_AVAILABLE
         
-        try:
-            # Clean texts
-            hypothesis = hypothesis.replace('<|im_end|>', '').strip()
-            clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
-            
-            # Skip empty texts
-            if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
-                logger.warning("Empty hypothesis or references, returning zero METEOR score")
+        if not use_pycocoevalcap or not PYCOCOEVALCAP_AVAILABLE:
+            logger.warning("PyCOCOEvalCap not available, falling back to NLTK METEOR")
+            if not METEOR_AVAILABLE:
+                logger.warning("METEOR not available, returning zero score")
                 return 0.0
             
-            # Use the best reference (first non-empty)
-            best_reference = None
-            for ref in clean_references:
-                if ref.strip():
-                    best_reference = ref.strip()
-                    break
-            
-            if not best_reference:
-                logger.warning("No valid reference found, returning zero METEOR score")
+            try:
+                # Clean texts
+                hypothesis = hypothesis.replace('<|im_end|>', '').strip()
+                clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
+                
+                # Skip empty texts
+                if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
+                    logger.warning("Empty hypothesis or references, returning zero METEOR score")
+                    return 0.0
+                
+                # Use the best reference (first non-empty)
+                best_reference = None
+                for ref in clean_references:
+                    if ref.strip():
+                        best_reference = ref.strip()
+                        break
+                
+                if not best_reference:
+                    logger.warning("No valid reference found, returning zero METEOR score")
+                    return 0.0
+                
+                # Tokenization based on language
+                if language.lower() in ["english", "en"]:
+                    # Use word tokenization for English
+                    ref_tokens = word_tokenize(best_reference.lower())
+                    hyp_tokens = word_tokenize(hypothesis.lower())
+                else:
+                    # Use character tokenization for Chinese and other languages
+                    ref_tokens = list(best_reference.lower())
+                    hyp_tokens = list(hypothesis.lower())
+                
+                logger.debug(f"Computing METEOR for hypothesis: '{hypothesis[:50]}...'")
+                logger.debug(f"Computing METEOR for reference: '{best_reference[:50]}...'")
+                logger.debug(f"Language: {language}, Tokenization: {'word' if language.lower() in ['english', 'en'] else 'character'}")
+                
+                # Compute METEOR score
+                meteor_score_value = meteor_score([ref_tokens], hyp_tokens)
+                
+                # Handle potential NaN or None values
+                if meteor_score_value is None or str(meteor_score_value).lower() == 'nan':
+                    logger.warning(f"METEOR returned invalid value, using 0.0")
+                    meteor_score_value = 0.0
+                
+                logger.debug(f"METEOR score: {meteor_score_value}")
+                return float(meteor_score_value)
+                
+            except Exception as e:
+                logger.error(f"Error computing METEOR: {e}")
                 return 0.0
-            
-            # Tokenization based on language
-            if language.lower() in ["english", "en"]:
-                # Use word tokenization for English
-                ref_tokens = word_tokenize(best_reference.lower())
-                hyp_tokens = word_tokenize(hypothesis.lower())
-            else:
-                # Use character tokenization for Chinese and other languages
-                ref_tokens = list(best_reference.lower())
-                hyp_tokens = list(hypothesis.lower())
-            
-            logger.debug(f"Computing METEOR for hypothesis: '{hypothesis[:50]}...'")
-            logger.debug(f"Computing METEOR for reference: '{best_reference[:50]}...'")
-            logger.debug(f"Language: {language}, Tokenization: {'word' if language.lower() in ['english', 'en'] else 'character'}")
-            
-            # Compute METEOR score
-            meteor_score_value = meteor_score([ref_tokens], hyp_tokens)
-            
-            # Handle potential NaN or None values
-            if meteor_score_value is None or str(meteor_score_value).lower() == 'nan':
-                logger.warning(f"METEOR returned invalid value, using 0.0")
-                meteor_score_value = 0.0
-            
-            logger.debug(f"METEOR score: {meteor_score_value}")
-            return float(meteor_score_value)
-            
-        except Exception as e:
-            logger.error(f"Error computing METEOR: {e}")
-            return 0.0
+        if use_pycocoevalcap:
+            try:
+                # Clean texts
+                hypothesis = hypothesis.replace('<|im_end|>', '').strip()
+                clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
+                
+                # Skip empty texts
+                if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
+                    logger.warning("Empty hypothesis or references, returning zero METEOR score")
+                    return 0.0
+                
+                # Use the best reference (first non-empty)
+                best_reference = None
+                for ref in clean_references:
+                    if ref.strip():
+                        best_reference = ref.strip()
+                        break
+                
+                if not best_reference:
+                    logger.warning("No valid reference found, returning zero METEOR score")
+                    return 0.0
+                
+                logger.debug(f"Computing METEOR for hypothesis: '{hypothesis[:50]}...'")
+                logger.debug(f"Computing METEOR for reference: '{best_reference[:50]}...'")
+                logger.debug(f"Language: {language}")
+                
+                # Initialize Meteor scorer
+                meteor_scorer = Meteor()
+                
+                # Format for PyCOCOEvalCap: dictionaries with index keys
+                # PyCOCOEvalCap expects strings (not token lists)
+                gts = {0: [best_reference]}
+                res = {0: [hypothesis]}
+                
+                # Compute METEOR score
+                meteor_score_value, _ = meteor_scorer.compute_score(gts, res)
+                
+                # Handle potential NaN or None values
+                if meteor_score_value is None or str(meteor_score_value).lower() == 'nan':
+                    logger.warning(f"METEOR returned invalid value, using 0.0")
+                    meteor_score_value = 0.0
+                
+                logger.debug(f"METEOR score: {meteor_score_value}")
+                return float(meteor_score_value)
+                
+            except Exception as e:
+                logger.error(f"Error computing METEOR: {e}")
+                return 0.0
     
     def compute_rouge_l(self, references: List[str], hypothesis: str) -> float:
         """
@@ -626,6 +665,127 @@ class EvaluationMetrics:
             logger.error(f"Error computing latency metrics: {e}")
             return {}
     
+    def compute_corpus_meteor(self, hypotheses: List[str], references: List[str], language: str = "chinese") -> float:
+        """
+        Compute corpus-level METEOR score using pycocoevalcap
+        
+        Args:
+            hypotheses: List of generated texts
+            references: List of reference texts
+            language: Language parameter ("chinese", "english", etc.)
+            
+        Returns:
+            Corpus-level METEOR score
+        """
+        # Use pycocoevalcap METEOR if available, otherwise fallback to sentence-level average
+        if not PYCOCOEVALCAP_AVAILABLE:
+            logger.warning("PyCOCOEvalCap not available for corpus METEOR, using average sentence-level score")
+            meteor_scores = []
+            for hyp, ref in zip(hypotheses, references):
+                meteor_scores.append(self.compute_meteor([ref], hyp, language=language))
+            return np.mean(meteor_scores) if meteor_scores else 0.0
+        
+        try:
+            if not hypotheses or not references or len(hypotheses) != len(references):
+                logger.error("Invalid input for corpus METEOR computation")
+                return 0.0
+            
+            # Clean texts: remove special tokens, newlines, tabs, and strip
+            # This is critical for pycocoevalcap METEOR which writes to temp files
+            # Unhandled newlines/tabs can break Java METEOR's file parsing
+            cleaned_references = [ref.replace('<|im_end|>', '').replace('\n', ' ').replace('\t', ' ').strip() for ref in references]
+            cleaned_hypotheses = [hyp.replace('<|im_end|>', '').replace('\n', ' ').replace('\t', ' ').strip() for hyp in hypotheses]
+            
+            # Format for PyCOCOEvalCap: dictionaries with index keys
+            # PyCOCOEvalCap expects strings (not token lists)
+            gts = {i: [ref] for i, ref in enumerate(cleaned_references)}
+            res = {i: [hyp] for i, hyp in enumerate(cleaned_hypotheses)}
+            
+            # Initialize Meteor scorer
+            meteor_scorer = Meteor()
+            
+            # Compute corpus-level METEOR score
+            meteor_score_value, _ = meteor_scorer.compute_score(gts, res)
+            
+            # Handle potential NaN or None values
+            if meteor_score_value is None or str(meteor_score_value).lower() == 'nan':
+                logger.warning(f"Corpus METEOR returned invalid value, using 0.0")
+                meteor_score_value = 0.0
+            
+            logger.debug(f"Corpus METEOR score: {meteor_score_value}")
+            return float(meteor_score_value)
+            
+        except Exception as e:
+            logger.error(f"Error computing corpus METEOR: {e}")
+            # Fallback to sentence-level average
+            try:
+                meteor_scores = []
+                for hyp, ref in zip(hypotheses, references):
+                    meteor_scores.append(self.compute_meteor([ref], hyp, language=language))
+                logger.warning("Falling back to average sentence-level METEOR")
+                return np.mean(meteor_scores) if meteor_scores else 0.0
+            except:
+                return 0.0
+    
+    def compute_corpus_rouge_l(self, hypotheses: List[str], references: List[str]) -> float:
+        """
+        Compute corpus-level ROUGE-L score
+        
+        Args:
+            hypotheses: List of generated texts
+            references: List of reference texts
+            
+        Returns:
+            Corpus-level ROUGE-L F1 score
+        """
+        if not ROUGE_AVAILABLE:
+            logger.warning("ROUGE not available for corpus ROUGE-L, returning average sentence-level score")
+            # Fallback to average sentence-level
+            rouge_l_scores = []
+            for hyp, ref in zip(hypotheses, references):
+                rouge_l_scores.append(self.compute_rouge_l([ref], hyp))
+            return np.mean(rouge_l_scores) if rouge_l_scores else 0.0
+        
+        try:
+            if not hypotheses or not references or len(hypotheses) != len(references):
+                logger.error("Invalid input for corpus ROUGE-L computation")
+                return 0.0
+            
+            # Initialize ROUGE scorer
+            scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+            
+            # Compute ROUGE-L for each pair
+            rouge_scores = []
+            for hyp, ref in zip(hypotheses, references):
+                scores = scorer.score(ref, hyp)
+                rouge_l_f1 = scores['rougeL'].fmeasure
+                if rouge_l_f1 is not None and str(rouge_l_f1).lower() != 'nan':
+                    rouge_scores.append(float(rouge_l_f1))
+            
+            # Average across all samples for corpus-level score
+            corpus_score = np.mean(rouge_scores) if rouge_scores else 0.0
+            logger.debug(f"Corpus ROUGE-L score: {corpus_score}")
+            return corpus_score
+            
+        except Exception as e:
+            logger.error(f"Error computing corpus ROUGE-L: {e}")
+            return 0.0
+    
+    def compute_corpus_cider(self, hypotheses: List[str], references: List[str], language: str = "chinese") -> float:
+        """
+        Compute corpus-level CIDEr score - DISABLED, returns 0.0
+        
+        Args:
+            hypotheses: List of generated texts
+            references: List of reference texts
+            language: Language parameter ("chinese", "english", etc.)
+            
+        Returns:
+            Corpus-level CIDEr score (always 0.0)
+        """
+        # CIDEr calculation disabled per user request
+        return 0.0
+
     def compute_all_metrics(self, 
                            predictions: List[str],
                            references: List[List[str]],
@@ -645,11 +805,11 @@ class EvaluationMetrics:
         
         # Compute traditional metrics
         for pred, refs in zip(predictions, references):
-            bleu_1 = self.compute_bleu_1(refs, pred)
-            bleu_4 = self.compute_bleu_4(refs, pred)
+            bleu_1 = self.compute_bleu_1(refs, pred, language=language)
+            bleu_4 = self.compute_bleu_4(refs, pred, language=language)
             meteor = self.compute_meteor(refs, pred, language=language)
             rouge_l = self.compute_rouge_l(refs, pred)
-            cider = self.compute_cider(refs, pred)
+            cider = self.compute_cider(refs, pred, language=language)
             
             bleu_1_scores.append(bleu_1)
             bleu_4_scores.append(bleu_4)

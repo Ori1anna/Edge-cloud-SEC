@@ -8,3 +8,7 @@ GPU: NVIDIA H100 80GB HBM3
 CUDA Version: Cuda compilation tools, release 12.4, V12.4.131
 ==========================================
 Starting Speculative Decoding experiment...
+==========================================
+Speculative Decoding experiment completed!
+End time: Sun 19 Oct 2025 16:17:24 AEDT
+==========================================

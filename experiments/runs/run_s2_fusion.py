@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-MODEL_NAME = "Qwen/Qwen3-4B-Thinking-2507"
+MODEL_NAME = "Qwen/Qwen3-7B-Instruct"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"正在使用的设备: {DEVICE}")
 
@@ -126,54 +126,44 @@ def generate_fusion_descriptions(data: List[Dict[str, Any]], model, tokenizer) -
                 subtitle=item['transcription']
             )
             
-            # Format for Qwen3 model (supports thinking mode automatically)
+            # Format for instruction-tuned model
             messages = [
                 {"role": "user", "content": full_prompt}
             ]
             
-            # Apply chat template (automatically includes <think> for thinking mode)
             text = tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True
             )
             
-            # Tokenize input
+            # Tokenize and generate
             model_inputs = tokenizer([text], return_tensors="pt").to(DEVICE)
             
             with torch.no_grad():
                 generated_ids = model.generate(
-                    **model_inputs,
+                    model_inputs.input_ids,
                     max_new_tokens=512,
                     do_sample=True,
-                    temperature=0.6,  # Recommended by official docs
-                    top_p=0.95,      # Recommended by official docs
-                    repetition_penalty=1.1
+                    temperature=0.7,
+                    top_p=0.9,
+                    repetition_penalty=1.1,
+                    pad_token_id=tokenizer.eos_token_id
                 )
             
-            # Extract only the new tokens (excluding input)
-            output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+            # Decode the generated text
+            generated_ids = [
+                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
             
-            # Parse thinking content and final content according to official docs
-            try:
-                # Find the end of thinking content (</think> token: 151668)
-                index = len(output_ids) - output_ids[::-1].index(151668)
-            except ValueError:
-                index = 0
-            
-            # Extract thinking content and final content
-            thinking_content = tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip()
-            final_content = tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip()
-            
-            # Use final content as the fusion description
-            fusion_description = final_content
+            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            fusion_description = response[0].strip()
             
             results.append({
                 "file_id": item['file_id'],
                 "audio_description": item['audio_description'],
                 "original_transcription": item['transcription'],
                 "fusion_description": fusion_description,
-                "thinking_content": thinking_content,  # Include thinking process
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             })
             
@@ -184,7 +174,6 @@ def generate_fusion_descriptions(data: List[Dict[str, Any]], model, tokenizer) -
                 "audio_description": item['audio_description'],
                 "original_transcription": item['transcription'],
                 "fusion_description": f"Error: {str(e)}",
-                "thinking_content": "",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
             })
     
@@ -218,14 +207,16 @@ def run_s2_fusion_experiment(
     # Load model and tokenizer
     print(f"正在加载模型: {MODEL_NAME}...")
     try:
-        # Load tokenizer and model according to official documentation
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             torch_dtype="auto",
             device_map="auto"
         )
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
         
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+            
         print("模型加载完成。")
         
     except Exception as e:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu-h100
+#SBATCH --partition=gpu-a100
 #SBATCH --account=punim2341
 #SBATCH --qos=feit
 #SBATCH --nodes=1
@@ -60,8 +60,9 @@ python experiments/runs/run_speculative_decoding_cpu_limited.py \
     --max_memory_gb 16 \
     --entropy_threshold 3.5 \
     --k 5 \
+    --rank_threshold 20 \
     --verbose \
-    --output_name speculative_decoding_mer_english_job1
+    --output_name speculative_decoding_mer_english_job4
 
 echo "=========================================="
 echo "Speculative Decoding experiment completed!"

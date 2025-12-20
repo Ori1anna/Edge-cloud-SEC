@@ -1,0 +1,10 @@
+==========================================
+Edge Baseline Experiment (CPU Limited)
+==========================================
+Job ID: 17086305
+Node: spartan-gpgpu011
+Start time: Mon 27 Oct 2025 04:14:15 AEDT
+GPU: NVIDIA H100 80GB HBM3
+CUDA Version: Cuda compilation tools, release 12.4, V12.4.131
+==========================================
+Starting Edge Baseline experiment...

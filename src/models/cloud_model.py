@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 class CloudModel:
     """Cloud model for verification and refinement"""
     
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-7B", device: str = "cuda", name: str = None, dtype: str = "float32"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-7B", device: str = "cuda", name: str = None, dtype: str = "float32", rank_threshold: int = 20):
         if name is not None:
             self.model_name = name
         else:
             self.model_name = model_name
         self.device = device
         self.dtype = dtype
+        self.rank_threshold = rank_threshold  # Accept top-N ranked tokens during verification
         self.model = None
         self.processor = None
         self.kv_cache = {}
@@ -438,9 +439,10 @@ class CloudModel:
         # 4) 逐位排名阈值验收 + 首错纠正
         accepted = 0
         probabilities = []
+        all_ranks = []  # Store ranks for all tokens
         
-        # 纯使用排名阈值，不使用概率阈值
-        rank_threshold = 20 # 接受排名前3的token (更严格的验证)
+        # 使用配置的排名阈值，不使用概率阈值
+        rank_threshold = self.rank_threshold
         
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置
@@ -457,8 +459,10 @@ class CloudModel:
             # 计算当前token的排名
             sorted_probs, sorted_indices = torch.sort(probs, descending=True)
             rank = (sorted_indices == draft_tokens[i]).nonzero(as_tuple=True)[0].item() + 1
+            all_ranks.append(rank)  # Store rank for logging
             
-            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.3e}, rank={rank}, rank_threshold={rank_threshold}")
+            # Print ranking info for debugging cloud verification
+            logger.info(f"[Cloud Verify] Token {i}/{k}: draft_token={draft_tokens[i]}, probability={p_i:.6f}, rank={rank}/{rank_threshold}")
             
             # Additional debugging for extremely low probabilities
             if p_i < 1e-6:
@@ -470,19 +474,21 @@ class CloudModel:
             # 纯使用排名阈值策略
             if rank <= rank_threshold:
                 accepted += 1
-                logger.debug(f"  -> ACCEPTED (rank={rank} <= {rank_threshold})")
+                logger.info(f"  -> ACCEPTED (rank {rank} <= {rank_threshold})")
             else:
+                logger.info(f"  -> REJECTED (rank {rank} > {rank_threshold})")
                 # 首错纠正：使用贪心选择（top-1）而非随机采样
                 corr = torch.argmax(probs).item()
                 logger.info(f"Cloud correction: accepted {accepted}/{k} tokens, first error at position {i}")
                 logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
-                logger.info(f"  -> Ranks: {[f'{rank}' for rank in [(sorted_indices == draft_tokens[j]).nonzero(as_tuple=True)[0].item() + 1 for j in range(len(probabilities))]]}")
+                logger.info(f"  -> Ranks: {all_ranks}")
                 logger.info(f"  -> Correction token: {corr} (replacing draft token {draft_tokens[i]})")
                 return draft_tokens[:accepted], corr, True
 
         # 全部通过
         logger.info(f"Cloud correction: accepted {accepted}/{k} tokens (all passed)")
         logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
+        logger.info(f"  -> Ranks: {all_ranks}")
         return draft_tokens, None, False
 
     
@@ -676,7 +682,8 @@ class CloudModel:
                                  target_sentences: int = 2,
                                  min_chars: int = 90,
                                  min_new_tokens_sc: int = 48,
-                                 prompt_type: str = "detailed") -> tuple[str, dict]:
+                                 prompt_type: str = "detailed",
+                                 rank_threshold: int = 20) -> tuple[str, dict]:
         """
         Generate using the SAME logic as Speculative Decoding's edge generation.
         This ensures Cloud Optimized Baseline uses exactly the same generation logic
@@ -695,6 +702,7 @@ class CloudModel:
             min_chars: Minimum characters for stopping criteria
             min_new_tokens_sc: Minimum new tokens before stopping
             prompt_type: Type of prompt ("default", "detailed", "concise")
+            rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
             
         Returns:
             Tuple of (generated_text, latency_metrics)
@@ -744,7 +752,8 @@ class CloudModel:
                 min_chars=min_chars,
                 min_new_tokens_sc=min_new_tokens_sc,
                 language=language,  # Pass detected language
-                prompt_type=prompt_type
+                prompt_type=prompt_type,
+                rank_threshold=rank_threshold
             )
             
             logger.info(f"Generating with Cloud model (7B) using Edge Baseline logic:")
