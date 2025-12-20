@@ -1,0 +1,212 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 22:07:13"
+  },
+  "aggregate_metrics": {
+    "average_bleu_1": 0.0,
+    "average_bleu_4": 0.0,
+    "average_meteor": 0.0,
+    "average_rouge_l": 0.0,
+    "average_cider": 0.0,
+    "average_ttft": 0.0,
+    "average_otps": 0.0,
+    "average_total_time": 0.46532440185546875,
+    "average_output_tokens": 0.0,
+    "total_samples": 5,
+    "processed_samples": 5,
+    "failed_samples": 0,
+    "success_rate": 1.0
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000000.wav",
+      "reference_text": "",
+      "generated_text": "",
+      "generation_time": 1.4073820114135742,
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 0.0,
+        "oet": 0.0,
+        "total_time": 1.4071738719940186,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0,
+        "streaming_metrics": {
+          "ttft": 0.0,
+          "itps": 0.0,
+          "otps": 0.0,
+          "oet": 0.0,
+          "total_time": 1.4071738719940186,
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000007.wav",
+      "reference_text": "",
+      "generated_text": "",
+      "generation_time": 0.2334761619567871,
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 0.0,
+        "oet": 0.0,
+        "total_time": 0.2333071231842041,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0,
+        "streaming_metrics": {
+          "ttft": 0.0,
+          "itps": 0.0,
+          "otps": 0.0,
+          "oet": 0.0,
+          "total_time": 0.2333071231842041,
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000021",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000021.wav",
+      "reference_text": "",
+      "generated_text": "",
+      "generation_time": 0.2633969783782959,
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 0.0,
+        "oet": 0.0,
+        "total_time": 0.26323795318603516,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0,
+        "streaming_metrics": {
+          "ttft": 0.0,
+          "itps": 0.0,
+          "otps": 0.0,
+          "oet": 0.0,
+          "total_time": 0.26323795318603516,
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000033",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000033.wav",
+      "reference_text": "",
+      "generated_text": "",
+      "generation_time": 0.22019624710083008,
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 0.0,
+        "oet": 0.0,
+        "total_time": 0.22004127502441406,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0,
+        "streaming_metrics": {
+          "ttft": 0.0,
+          "itps": 0.0,
+          "otps": 0.0,
+          "oet": 0.0,
+          "total_time": 0.22004127502441406,
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    },
+    {
+      "file_id": "sample_00000039",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000039.wav",
+      "reference_text": "",
+      "generated_text": "",
+      "generation_time": 0.20217061042785645,
+      "latency_metrics": {
+        "ttft": 0.0,
+        "itps": 0.0,
+        "otps": 0.0,
+        "oet": 0.0,
+        "total_time": 0.2020130157470703,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cpu_percent": 0.0,
+        "ram_gb": 0.0,
+        "gpu_util": 0.0,
+        "gpu_memory_gb": 0.0,
+        "streaming_metrics": {
+          "ttft": 0.0,
+          "itps": 0.0,
+          "otps": 0.0,
+          "oet": 0.0,
+          "total_time": 0.2020130157470703,
+          "input_tokens": 0,
+          "output_tokens": 0
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0,
+        "bleu_4": 0,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.0
+      }
+    }
+  ]
+}

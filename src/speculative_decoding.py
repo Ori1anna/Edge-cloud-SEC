@@ -7,8 +7,13 @@ import torch
 import time
 import logging
 from typing import Dict, List, Optional, Tuple
-from src.models.edge_model import EdgeModel
-from src.models.cloud_model import CloudModel
+try:
+    from src.models.edge_model import EdgeModel
+    from src.models.cloud_model import CloudModel
+except ImportError:
+    # Fallback for direct execution
+    from models.edge_model import EdgeModel
+    from models.cloud_model import CloudModel
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +28,10 @@ class SimpleSpeculativeDecoding:
                  k: int = 5,
                  target_sentences: int = 2,
                  min_chars: int = 90,
-                 min_new_tokens_sc: int = 48):
+                 min_new_tokens_sc: int = 48,
+                 language: str = "chinese",
+                 prompt_type: str = "detailed",
+                 rank_threshold: int = 20):
         """
         Initialize speculative decoding system
         
@@ -35,6 +43,9 @@ class SimpleSpeculativeDecoding:
             target_sentences: Target number of sentences to generate (default: 2)
             min_chars: Minimum characters for stopping criteria (default: 90 for 2-3 sentences)
             min_new_tokens_sc: Minimum new tokens for stopping criteria (default: 48)
+            language: Language for generation ("chinese" or "english")
+            prompt_type: Type of prompt ("default", "detailed", "concise")
+            rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
         """
         self.edge_model = edge_model
         self.cloud_model = cloud_model  # Can be None
@@ -43,16 +54,31 @@ class SimpleSpeculativeDecoding:
         self.target_sentences = target_sentences
         self.min_chars = min_chars
         self.min_new_tokens_sc = min_new_tokens_sc
+        self.language = language
+        self.prompt_type = prompt_type
+        self.rank_threshold = rank_threshold
         
         # Log if running in Edge-only mode
         if cloud_model is None:
             logger.info("Running in Edge-only mode (cloud_model=None)")
         
-        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}, language={language}, prompt_type={prompt_type}, rank_threshold={rank_threshold}")
     
-    def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str) -> dict:
+    def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str, transcription: str = None) -> dict:
         """Prepare initial context from audio and prompt"""
         try:
+            # Build user content: audio + optional transcription + task prompt
+            user_content = [
+                {"type": "audio", "audio": audio_features},  # Include audio waveform
+            ]
+            
+            # Add transcription if provided (for multimodal input: audio + text)
+            if transcription:
+                user_content.append({"type": "text", "text": f"Transcription: {transcription}"})
+            
+            # Add task prompt
+            user_content.append({"type": "text", "text": prompt})
+            
             # Create conversation with audio input (same format as Edge model)
             conversation = [
                 {
@@ -63,10 +89,7 @@ class SimpleSpeculativeDecoding:
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "audio", "audio": audio_features},  # Include audio waveform
-                        {"type": "text", "text": prompt}
-                    ],
+                    "content": user_content
                 },
             ]
             
@@ -112,42 +135,22 @@ class SimpleSpeculativeDecoding:
     
     
     def _is_eos_token(self, token_id: int) -> bool:
-        """Check if token is EOS token or should stop generation"""
+        """Check if token is a TRUE EOS token"""
         eos_token_id = self.edge_model.processor.tokenizer.eos_token_id
         im_end_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|im_end|>')
         endoftext_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|endoftext|>')
+        end_id = self.edge_model.processor.tokenizer.convert_tokens_to_ids('<|end|>')  # Possible model-specific stop token
         
-        # Standard EOS tokens
-        if token_id in [eos_token_id, im_end_id, endoftext_id]:
-            return True
+        # Only check for TRUE EOS tokens
+        true_eos_ids = {eos_token_id, im_end_id, endoftext_id}
+        if end_id is not None:
+            true_eos_ids.add(end_id)
         
-        # Check for problematic patterns (but NOT sentence-ending punctuation)
-        try:
-            # Convert token to text to check for stop conditions
-            token_text = self.edge_model.processor.tokenizer.decode([token_id], skip_special_tokens=True)
-            
-            # Stop on conversation markers or truly problematic patterns
-            # NOTE: We DO NOT stop on '。' or '\n' - sentence ending is handled by stopping_criteria
-            # This prevents premature truncation before min_chars/min_tokens are reached
-            # Newline is allowed for multi-sentence paragraphs
-            if token_text in ['Human', 'Human:', 'Please', 'functionalities', '—', '**', '"', '"', '```', '```', '我/', '我/']:
-                return True
-                
-            # REMOVED: newline as EOS (allows multi-sentence output)
-            # if '\n' in token_text:
-            #     return True
-                
-            # Stop on truly problematic patterns that indicate generation issues
-            # Only stop on patterns that are universally problematic across datasets
-            if token_text in ['<|endoftext|>', '<|im_end|>', '<|end|>']:
-                return True
-                
-                
-        except Exception:
-            # If decoding fails, just check standard EOS tokens
-            pass
+        # Remove UNK token ID if it accidentally appears in the set
+        if hasattr(self.edge_model.processor.tokenizer, 'unk_token_id') and self.edge_model.processor.tokenizer.unk_token_id is not None:
+            true_eos_ids.discard(self.edge_model.processor.tokenizer.unk_token_id)
         
-        return False
+        return token_id in true_eos_ids
     
     def _is_sentence_end_token(self, token_id: int) -> bool:
         """Check if token represents sentence-ending punctuation (for N-sentence stopping)"""
@@ -175,6 +178,7 @@ class SimpleSpeculativeDecoding:
     def generate(self, 
                  audio_features: torch.Tensor, 
                  prompt: str = "基于这个音频，用中文描述说话人的情感状态。",
+                 transcription: str = None,  # Add transcription text input
                  max_new_tokens: int = 128) -> Tuple[str, Dict]:
         """
         Main generation function using speculative decoding
@@ -182,6 +186,7 @@ class SimpleSpeculativeDecoding:
         Args:
             audio_features: Audio input tensor
             prompt: Text prompt
+            transcription: Optional transcription text to include as context
             max_new_tokens: Maximum tokens to generate
             
         Returns:
@@ -194,7 +199,7 @@ class SimpleSpeculativeDecoding:
             total_start_time = time.time()
             
             # Prepare initial context
-            context = self._prepare_initial_context(audio_features, prompt)
+            context = self._prepare_initial_context(audio_features, prompt, transcription)
             
             # Record time after input processing
             input_end_time = time.time()
@@ -324,22 +329,35 @@ class SimpleSpeculativeDecoding:
             prefill_time = time.time() - prefill_start_time
             logger.info(f"Multimodal prefill completed in {prefill_time:.3f}s")
             
-            # Add stopping criteria for multi-sentence Chinese audio description
-            # Target: 2-3 natural Chinese sentences (~90-140 characters)
-            from src.models.stopping_criteria import create_stopping_criteria
+            # Add stopping criteria for multi-sentence audio description
+            # Language-aware sentence ending characters
+            if self.language.lower() in ["english", "en"]:
+                # For English, only use period as sentence ending
+                sentence_end_chars = (".",)
+            else:
+                # For Chinese, use both Chinese and English period
+                sentence_end_chars = ("。", ".")
+            
+            try:
+                from src.models.stopping_criteria import create_stopping_criteria
+            except ImportError:
+                # Fallback for direct execution
+                from models.stopping_criteria import create_stopping_criteria
             stopping_criteria = create_stopping_criteria(
                 self.edge_model.processor.tokenizer,
                 n_sentences=self.target_sentences,  # Configurable (default: 2 sentences)
-                sentence_end_chars=("。", "."),  # Period stops generation
-                min_new_tokens=self.min_new_tokens_sc,  # Configurable (default: 48 for 2-3 sentences)
-                min_chars=self.min_chars,  # Configurable (default: 90 for 2-3 sentences)
-                prompt_type="detailed"  # Use detailed mode for multi-sentence output
+                sentence_end_chars=sentence_end_chars,  # Language-specific period characters
+                min_new_tokens=self.min_new_tokens_sc,  # Configurable (default: 48 for Chinese, 60 for English)
+                min_chars=self.min_chars,  # Configurable (default: 90 for Chinese, 150 for English)
+                prompt_type=self.prompt_type  # Use configured prompt type
             )
             current_context['stopping_criteria'] = stopping_criteria
-            logger.info("Added stopping criteria for consistent stopping behavior")
+            logger.info(f"Added stopping criteria for {self.language} with sentence_end_chars={sentence_end_chars}, min_chars={self.min_chars}, min_new_tokens={self.min_new_tokens_sc}, prompt_type={self.prompt_type}")
             
             # Main speculative decoding loop with incremental generation
             while len(generated_tokens) < max_new_tokens:
+                logger.info(f"=== Generation Loop Iteration: generated_tokens={len(generated_tokens)}/{max_new_tokens} ===")
+                
                 # Check for timeout
                 elapsed_time = time.time() - generation_start_time
                 if elapsed_time > max_generation_time:
@@ -480,6 +498,27 @@ class SimpleSpeculativeDecoding:
                                     needs_cloud_verification = True
                                     max_uncertainty = self.entropy_threshold + 0.1
                             
+                            # 1.5. Language consistency check
+                            if len(draft_text.strip()) >= 10:  # Only check if we have enough text
+                                chinese_chars = sum(1 for c in draft_text if '\u4e00' <= c <= '\u9fff')
+                                english_words = len([w for w in draft_text.split() if w.isalpha()])
+                                
+                                # If expecting English but getting Chinese, force cloud verification
+                                if self.language.lower() in ["english", "en"] and chinese_chars > 0 and english_words < 3:
+                                    logger.warning(f"Language mismatch detected: expecting English but generated Chinese text")
+                                    logger.warning(f"Draft text: {draft_text[:100]}...")
+                                    logger.warning("Forcing cloud verification to correct language")
+                                    needs_cloud_verification = True
+                                    max_uncertainty = self.entropy_threshold + 0.2
+                                
+                                # If expecting Chinese but getting English, force cloud verification  
+                                elif self.language.lower() in ["chinese", "zh"] and english_words > 3 and chinese_chars == 0:
+                                    logger.warning(f"Language mismatch detected: expecting Chinese but generated English text")
+                                    logger.warning(f"Draft text: {draft_text[:100]}...")
+                                    logger.warning("Forcing cloud verification to correct language")
+                                    needs_cloud_verification = True
+                                    max_uncertainty = self.entropy_threshold + 0.2
+                            
                             # 2. Abnormally high punctuation density (>50% of decoded text)
                             if len(draft_chars) >= 4:
                                 punct_count_in_text = sum(1 for c in draft_chars if c in punct_chars)
@@ -503,7 +542,25 @@ class SimpleSpeculativeDecoding:
                         logger.warning(f"Cloud verification requested but cloud_model is None (Edge-only mode)")
                         logger.warning(f"Accepting all Edge tokens instead")
                         # Accept all Edge tokens in Edge-only mode
-                        needs_cloud_verification = False
+                        should_stop = False
+                        
+                        # Record TTFT when first tokens are actually accepted
+                        if first_token_time is None:
+                            first_token_time = time.time()
+                            logger.debug(f"TTFT recorded: Edge tokens accepted (Edge-only mode)")
+                        
+                        # CRITICAL: Accept all Edge tokens when cloud is unavailable
+                        generated_tokens.extend(draft_tokens)
+                        total_accepted_tokens += len(draft_tokens)
+                        current_context = self._update_context_incremental(current_context, draft_tokens)
+                        
+                        # Check for stop condition in accepted tokens
+                        for token in draft_tokens:
+                            if self._is_eos_token(token):
+                                logger.info(f"Stop condition met in accepted token {token}, stopping generation")
+                                should_stop = True
+                        
+                        # Don't set needs_cloud_verification to False - just continue with Edge tokens
                     else:
                         logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
                         cloud_calls += 1
@@ -610,7 +667,7 @@ class SimpleSpeculativeDecoding:
                         if self._is_eos_token(token):
                             logger.info(f"Stop condition met in accepted token {token}, stopping generation")
                             should_stop = True
-                    break
+                            break
             
                 # Check for EOS token or other stop conditions (if not already set)
                 if not should_stop:
@@ -636,8 +693,12 @@ class SimpleSpeculativeDecoding:
                         # Actually, just use current_context['input_ids'] which already includes accepted tokens
                         check_sequence = current_context['input_ids']
                         
+                        # DEBUG: Log the current state
+                        logger.info(f"Checking stopping criteria: generated_tokens={len(generated_tokens)}, check_sequence_len={check_sequence.shape[1]}")
+                        
                         # Check if we should stop
                         stop_check = any(criterion(check_sequence, None) for criterion in current_context['stopping_criteria'])
+                        logger.info(f"Stopping criteria check result: {stop_check}")
                         if stop_check:
                             logger.info(f"Stopping criteria met in main loop after {len(generated_tokens)} tokens")
                             should_stop = True
@@ -923,9 +984,8 @@ class SimpleSpeculativeDecoding:
                     # Include current draft tokens
                     recent_tokens.extend(draft_tokens)
                     
-                    # Apply repetition penalty ONLY to CJK content tokens (not punctuation)
-                    # This avoids gaming between repetition penalty and punctuation gate
-                    # Note: _is_cjk function will be defined below, need to define it here first
+                    # Apply repetition penalty to ALL non-punctuation tokens (universal)
+                    # This ensures effective anti-repetition for both CJK and English
                     def _is_cjk_temp(token_id):
                         """Check if token contains CJK characters"""
                         try:
@@ -934,13 +994,30 @@ class SimpleSpeculativeDecoding:
                         except:
                             return False
                     
+                    # Define punctuation tokens first
+                    def _ids_for(chars):
+                        """Get token IDs for given characters"""
+                        ids = []
+                        for ch in chars:
+                            enc = self.edge_model.processor.tokenizer.encode(ch, add_special_tokens=False)
+                            if enc:
+                                ids.append(enc[0])
+                        return set(ids)
+                    
+                    PUNCT_IDS = _ids_for([
+                        # Chinese punctuation
+                        '，', '。', '、', '：', '；', '！', '？',
+                        # English punctuation
+                        ',', '.', ';', ':', '!', '?'
+                    ])
+                    
                     if recent_tokens:
                         recent_tensor = torch.tensor(recent_tokens, device=logits_temp.device)
                         unique_recent = torch.unique(recent_tensor)
                         repetition_penalty = 1.22  # Slightly stronger (was 1.1), but only for content
                         for token_id in unique_recent:
-                            # Only apply to CJK content tokens, not punctuation
-                            if _is_cjk_temp(token_id.item()):
+                            # Apply to ALL non-punctuation tokens (universal anti-repetition)
+                            if token_id.item() not in PUNCT_IDS:
                                 if logits_temp[token_id] > 0:
                                     logits_temp[token_id] /= repetition_penalty
                                 else:
@@ -984,20 +1061,34 @@ class SimpleSpeculativeDecoding:
                         ',', '.', ';', ':', '!', '?'
                     ])
                     
-                    # 2.1) Block immediate same-char repetition (CJK content only)
+                    # 2.1) Block immediate same-token repetition (universal)
                     if draft_tokens:
                         last_token = draft_tokens[-1]
-                        if _is_cjk(last_token):
+                        # Block immediate repetition for ALL non-punctuation tokens
+                        if last_token not in PUNCT_IDS:
                             logits_temp[last_token] = -float('inf')
-                            logger.debug(f"Blocked immediate repetition of CJK token {last_token}")
+                            logger.debug(f"Blocked immediate repetition of non-punct token {last_token}")
+                        
+                        # Additional check for English word repetition
+                        if not _is_cjk(last_token):
+                            try:
+                                last_word = self.edge_model.processor.tokenizer.decode([last_token], skip_special_tokens=True)
+                                # Check if it's a common English word that shouldn't repeat
+                                common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+                                if last_word.lower().strip() in common_words:
+                                    logger.warning(f"Blocking repetition of common English word: '{last_word}'")
+                                    # Apply stronger penalty for common words
+                                    logits_temp[last_token] = -float('inf')
+                            except:
+                                pass
                     
                     # 2.2) Gentle n-gram ban on content-only history (strip punctuation)
                     full_history = context['input_ids'][0].tolist() + draft_tokens
                     content_hist = [t for t in full_history if t not in PUNCT_IDS]
                     
-                    # Apply trigram constraint on content tokens if recent window is CJK
-                    if len(content_hist) >= 3 and all(_is_cjk(t) for t in content_hist[-6:]):
-                        # Build trigram map on content-only history
+                    # Apply trigram constraint on content tokens (universal)
+                    if len(content_hist) >= 3:
+                        # Build trigram map on content-only history (universal application)
                         trigrams = {}
                         for x, y, z in zip(content_hist[:-2], content_hist[1:-1], content_hist[2:]):
                             trigrams.setdefault((x, y), set()).add(z)
@@ -1007,7 +1098,7 @@ class SimpleSpeculativeDecoding:
                             banned = list(trigrams.get((a, b), []))
                             if banned:
                                 logits_temp[banned] = -float('inf')
-                                logger.debug(f"Banned {len(banned)} tokens via content-only trigram (CJK)")
+                                logger.debug(f"Banned {len(banned)} tokens via content-only trigram (Universal)")
                     
                     # 3. Hard punctuation gate (pre-selection blocking)
                     # Prevent "single-char + comma" pattern by enforcing minimum content between punctuation

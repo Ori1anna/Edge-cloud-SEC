@@ -107,7 +107,7 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
             return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
     elif prompt_type == "concise":
         if language == "chinese":
-            return "请用最简洁的中文描述音频中的情感状态。"
+            return "请用中文用一句话描述上面给出的音频中说话人的情感"
         elif language == "english":
             return "Please describe the emotional state in the audio using the most concise English."
     else:
@@ -121,7 +121,8 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                                 verbose: bool = False,
                                 caption_type: str = "original",
                                 language: str = "chinese",
-                                prompt_type: str = "default"):
+                                prompt_type: str = "default",
+                                input_modality: str = "audio_only"):
     """
     Run cloud-only baseline experiment with flexible configuration
     
@@ -196,9 +197,16 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 audio_waveform, prompt_template, max_new_tokens=max_tokens, prompt_type=prompt_type
             )
             
+            # Clean generated text: remove newlines, tabs, and strip
+            # This is critical for pycocoevalcap METEOR which writes to temp files
+            generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
+            
             # Calculate traditional metrics
-            bleu_score = metrics.compute_bleu([reference_caption], generated_text)
-            cider_score = metrics.compute_cider([reference_caption], generated_text)
+            bleu_1_score = metrics.compute_bleu_1([reference_caption], generated_text, language=language)
+            bleu_4_score = metrics.compute_bleu_4([reference_caption], generated_text, language=language)
+            meteor_score = metrics.compute_meteor([reference_caption], generated_text, language=language)
+            rouge_l_score = metrics.compute_rouge_l([reference_caption], generated_text)
+            cider_score = metrics.compute_cider([reference_caption], generated_text, language=language)
             
             # Store results (BERTScore will be calculated in batch later)
             result = {
@@ -206,7 +214,10 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 "dataset": sample['dataset'],
                 "reference_caption": reference_caption,
                 "generated_text": generated_text,
-                "bleu_score": bleu_score,
+                "bleu_1_score": bleu_1_score,
+                "bleu_4_score": bleu_4_score,
+                "meteor_score": meteor_score,
+                "rouge_l_score": rouge_l_score,
                 "cider_score": cider_score,
                 "caption_type": caption_type,
                 "language": language,
@@ -219,7 +230,10 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 logger.info(f"Sample {i+1}:")
                 logger.info(f"  Reference: {reference_caption}")
                 logger.info(f"  Generated: {generated_text}")
-                logger.info(f"  BLEU: {bleu_score:.4f}")
+                logger.info(f"  BLEU-1: {bleu_1_score:.4f}")
+                logger.info(f"  BLEU-4: {bleu_4_score:.4f}")
+                logger.info(f"  METEOR: {meteor_score:.4f}")
+                logger.info(f"  ROUGE-L: {rouge_l_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
                 logger.info(f"  BERTScore: Computing in batch...")
                 if detailed_latency:
@@ -261,17 +275,32 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
         # Calculate corpus-level BLEU with language-specific tokenization
         import sacrebleu
         hyps = [r['generated_text'] for r in results]
+        refs_list = [r['reference_caption'] for r in results]
         refs = [[r['reference_caption'] for r in results]]
         
         # Select tokenization based on language
         # Chinese: 'zh' - character-level tokenization
         # English: '13a' - standard English tokenization (handles punctuation, case, etc.)
         bleu_tokenize = 'zh' if language == 'chinese' else '13a'
-        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
-        overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
+        corpus_bleu_result = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
+        
+        # Extract BLEU-4 (the default score)
+        overall_bleu_4 = corpus_bleu_result.score / 100.0  # Convert to [0,1] range
+        
+        # Extract BLEU-1 from precisions (precisions[0] is BLEU-1)
+        # precisions is a list of [BLEU-1, BLEU-2, BLEU-3, BLEU-4] as percentages
+        overall_bleu_1 = corpus_bleu_result.precisions[0] / 100.0  # Convert to [0,1] range
+        
+        # Corpus-level METEOR, ROUGE-L, CIDEr
+        corpus_meteor = metrics.compute_corpus_meteor(hyps, refs_list, language=language)
+        corpus_rouge_l = metrics.compute_corpus_rouge_l(hyps, refs_list)
+        corpus_cider = metrics.compute_corpus_cider(hyps, refs_list, language=language)
         
         # Keep sentence-level averages for diagnostic purposes
-        avg_bleu_sentence = sum(r['bleu_score'] for r in results) / len(results)
+        avg_bleu_1_sentence = sum(r['bleu_1_score'] for r in results) / len(results)
+        avg_bleu_4_sentence = sum(r['bleu_4_score'] for r in results) / len(results)
+        avg_meteor_sentence = sum(r['meteor_score'] for r in results) / len(results)
+        avg_rouge_l_sentence = sum(r['rouge_l_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
         avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
         avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
@@ -292,12 +321,23 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
                 "total_samples": len(results)
             },
             "metrics": {
-                f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
-                "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
+                # Corpus-level metrics
+                f"corpus_bleu_1_{language[:2]}": overall_bleu_1,
+                f"corpus_bleu_4_{language[:2]}": overall_bleu_4,
+                "corpus_meteor": corpus_meteor,
+                "corpus_rouge_l": corpus_rouge_l,
+                "corpus_cider": corpus_cider,
+                # Sentence-level metrics (averaged)
+                "avg_bleu_1_sentence": avg_bleu_1_sentence,
+                "avg_bleu_4_sentence": avg_bleu_4_sentence,
+                "avg_meteor_sentence": avg_meteor_sentence,
+                "avg_rouge_l_sentence": avg_rouge_l_sentence,
                 "avg_cider": avg_cider,
+                # BERTScore
                 "avg_bertscore_precision": avg_bertscore_precision,
                 "avg_bertscore_recall": avg_bertscore_recall,
                 "avg_bertscore_f1": avg_bertscore_f1,
+                # Latency metrics
                 "latency_metrics": latency_metrics
             },
             "detailed_results": results
@@ -312,9 +352,31 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
         
         logger.info(f"Results saved to: {output_file}")
         lang_display = "Chinese" if language == 'chinese' else "English"
-        logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
-        logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
+        
+        # Log corpus-level metrics
+        logger.info("=" * 80)
+        logger.info("CORPUS-LEVEL METRICS:")
+        logger.info("=" * 80)
+        logger.info(f"Corpus BLEU-1 ({lang_display} tokenization): {overall_bleu_1:.4f}")
+        logger.info(f"Corpus BLEU-4 ({lang_display} tokenization): {overall_bleu_4:.4f}")
+        logger.info(f"Corpus METEOR: {corpus_meteor:.4f}")
+        logger.info(f"Corpus ROUGE-L: {corpus_rouge_l:.4f}")
+        logger.info(f"Corpus CIDEr: {corpus_cider:.4f}")
+        
+        # Log sentence-level metrics
+        logger.info("=" * 80)
+        logger.info("SENTENCE-LEVEL METRICS (AVERAGE):")
+        logger.info("=" * 80)
+        logger.info(f"Average BLEU-1: {avg_bleu_1_sentence:.4f}")
+        logger.info(f"Average BLEU-4: {avg_bleu_4_sentence:.4f}")
+        logger.info(f"Average METEOR: {avg_meteor_sentence:.4f}")
+        logger.info(f"Average ROUGE-L: {avg_rouge_l_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
+        
+        # Log BERTScore
+        logger.info("=" * 80)
+        logger.info("BERTScore:")
+        logger.info("=" * 80)
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
         logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")
         logger.info(f"Average BERTScore F1: {avg_bertscore_f1:.4f}")
@@ -352,6 +414,8 @@ def main():
                        help="Language for generation")
     parser.add_argument("--prompt_type", default="default", choices=["default", "detailed", "concise"], 
                        help="Type of prompt to use")
+    parser.add_argument("--input_modality", default="audio_only", choices=["audio_only", "audio_text"],
+                       help="Input modality: 'audio_only' (audio only) or 'audio_text' (audio + transcription)")
     
     args = parser.parse_args()
     
@@ -364,7 +428,8 @@ def main():
         verbose=args.verbose,
         caption_type=args.caption_type,
         language=args.language,
-        prompt_type=args.prompt_type
+        prompt_type=args.prompt_type,
+        input_modality=args.input_modality
     )
 
 if __name__ == "__main__":

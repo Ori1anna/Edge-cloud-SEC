@@ -1,1380 +1,402 @@
 {
   "experiment_config": {
     "dataset_type": "unified",
-    "dataset_path": "data/processed/secap/manifest.json",
+    "dataset_path": "data/processed/mer2024/manifest_audio_text_augmented_v5.json",
     "caption_type": "audio_only",
-    "language": "chinese",
-    "prompt_type": "default",
-    "max_samples": 50,
-    "total_samples": 50,
+    "language": "english",
+    "prompt_type": "detailed",
+    "max_samples": 5,
+    "total_samples": 5,
     "speculative_decoding_config": {
-      "entropy_threshold": 1.45,
-      "prob_threshold": 0.24,
+      "entropy_threshold": 3.5,
       "k": 5
+    },
+    "hardware_config": {
+      "edge_device": "cpu",
+      "cloud_device": "cuda",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 16.0,
+      "edge_model_dtype": "float32",
+      "cloud_model_dtype": "float32"
     }
   },
   "metrics": {
-    "avg_bleu": 0.016867202257168753,
-    "avg_cider": 0.17309947902922362,
+    "corpus_bleu_en": 0.0021902862180023267,
+    "avg_bleu_1_sentence": 0.08791428300275776,
+    "avg_bleu_4_sentence": 0.00594307292269443,
+    "avg_meteor_sentence": 0.08188908766334407,
+    "avg_rouge_l_sentence": 0.09767109067336247,
+    "avg_cider": 0.3766404037817577,
+    "avg_bertscore_precision": 0.8130785346031189,
+    "avg_bertscore_recall": 0.8309449195861817,
+    "avg_bertscore_f1": 0.8214622616767884,
+    "latency_metrics": {
+      "ttft_mean": 7.428421354293823,
+      "ttft_min": 6.146026849746704,
+      "ttft_max": 8.532208919525146,
+      "itps_mean": 2083.1626687420603,
+      "itps_min": 1587.5154446243455,
+      "itps_max": 2473.8550177564757,
+      "otps_mean": 1.8148148365447017,
+      "otps_min": 1.00230788541772,
+      "otps_max": 2.1146611689147563,
+      "oet_mean": 40.08747534751892,
+      "oet_min": 32.10918879508972,
+      "oet_max": 56.86875343322754,
+      "total_time_mean": 40.17484092712402,
+      "total_time_min": 32.18554759025574,
+      "total_time_max": 56.94584918022156,
+      "cpu_percent_mean": 193.87762604998747,
+      "cpu_percent_min": 191.6219081272078,
+      "cpu_percent_max": 196.33125000000047,
+      "ram_gb_mean": 24.119388836197817,
+      "ram_gb_min": 23.756126772378376,
+      "ram_gb_max": 24.29465187202066,
+      "gpu_util_mean": 96.4,
+      "gpu_util_min": 84.0,
+      "gpu_util_max": 100.0,
+      "gpu_memory_gb_mean": 43.246533203125,
+      "gpu_memory_gb_min": 43.001220703125,
+      "gpu_memory_gb_max": 43.307861328125,
+      "avg_input_tokens": 178.2,
+      "avg_output_tokens": 69.4,
+      "total_input_tokens": 891,
+      "total_output_tokens": 347
+    },
     "speculative_decoding_metrics": {
-      "total_time_mean": 3.677264733314514,
-      "avg_cloud_calls": 1.68,
-      "avg_acceptance_rate": 0.8366213383986747,
-      "avg_correction_rate": 0.36261111111111105,
-      "avg_cloud_call_rate": 0.2242541380188439,
-      "total_samples": 50
+      "total_time_mean": 40.17484092712402,
+      "avg_cloud_calls": 9.4,
+      "avg_acceptance_rate": 0.8784810126582279,
+      "avg_correction_rate": 0.2553191489361702,
+      "avg_cloud_call_rate": 9.4,
+      "total_samples": 5
     }
   },
   "detailed_results": [
     {
-      "file_id": "tx_emotion_00201000015",
-      "dataset": "secap",
-      "reference_caption": "悲伤逆流成河",
-      "generated_text": "悲伤，声音低沉。",
-      "bleu_score": 0.05873949094699214,
-      "cider_score": 0.2886751345948129,
+      "file_id": "sample_00000000",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The person seems quite uncertain. Their tone is somewhat hesitant when they say \"我哪知道啊\"，which translates roughly as 'I don't know'. This suggests that there's some doubt or uncertainty in their mind. They also mention not having experience, which further indicates a lack of confidence. Overall I'd predict the individual to be feeling doubtful. What do you think? Do you have any other thoughts on this?",
+      "bleu_1_score": 0.13625164487831196,
+      "bleu_4_score": 0.009532338793260198,
+      "meteor_score": 0.11046133853151395,
+      "rouge_l_score": 0.12440191387559807,
+      "cider_score": 0.4667959909497829,
       "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.3187477588653564,
-        "output_tokens": 7,
-        "cloud_calls": 1,
-        "total_draft_tokens": 10,
-        "total_accepted_tokens": 7,
-        "total_corrections": 1,
-        "acceptance_rate": 0.7,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.3333333333333333
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000107",
-      "dataset": "secap",
-      "reference_caption": "伤心难过，声音颤抖，情绪激动失望",
-      "generated_text": "父爱如山，深沉而坚定。",
-      "bleu_score": 0.011964983992380529,
-      "cider_score": 0.1421338109037403,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 2.3608312606811523,
-        "output_tokens": 11,
-        "cloud_calls": 3,
-        "total_draft_tokens": 17,
-        "total_accepted_tokens": 11,
-        "total_corrections": 2,
-        "acceptance_rate": 0.6470588235294118,
-        "correction_rate": 0.6666666666666666,
-        "cloud_call_rate": 0.75
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000148",
-      "dataset": "secap",
-      "reference_caption": "伤心难过，又无能为力",
-      "generated_text": "悲伤，语调低沉，声音颤抖，停顿明显。",
-      "bleu_score": 0.01284618972676772,
-      "cider_score": 0.25819888974716115,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.9733443260192871,
-        "output_tokens": 15,
-        "cloud_calls": 0,
-        "total_draft_tokens": 15,
-        "total_accepted_tokens": 15,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000209",
-      "dataset": "secap",
-      "reference_caption": "内心对他人感到抱歉，责怪自己",
-      "generated_text": "Tone: 感到悲伤。",
-      "bleu_score": 0.03034815223262279,
-      "cider_score": 0.16116459280507606,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.5010170936584473,
-        "output_tokens": 9,
-        "cloud_calls": 2,
-        "total_draft_tokens": 16,
-        "total_accepted_tokens": 9,
-        "total_corrections": 2,
-        "acceptance_rate": 0.5625,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.5
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000220",
-      "dataset": "secap",
-      "reference_caption": "悲痛到无法自拔",
-      "generated_text": "悲伤，声音低沉，停顿明显。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.0975900072948533,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6947081089019775,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000274",
-      "dataset": "secap",
-      "reference_caption": "伤心不已，悲伤凄凉",
-      "generated_text": "悲伤，声音低沉，停顿明显。",
-      "bleu_score": 0.036362270465000714,
-      "cider_score": 0.3892494720807615,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.5550358295440674,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000323",
-      "dataset": "secap",
-      "reference_caption": "心里无比疼痛，伤心",
-      "generated_text": "悲伤，语调低沉，声音颤抖。",
-      "bleu_score": 0.018476860420522198,
-      "cider_score": 0.23354968324845687,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6788156032562256,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000340",
-      "dataset": "secap",
-      "reference_caption": "心里委屈，烦恼，窝火",
-      "generated_text": "害怕，声音颤抖。",
-      "bleu_score": 0.02163211878762423,
-      "cider_score": 0.20412414523193148,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.30403923988342285,
-        "output_tokens": 6,
-        "cloud_calls": 0,
-        "total_draft_tokens": 6,
-        "total_accepted_tokens": 6,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00201000467",
-      "dataset": "secap",
-      "reference_caption": "透漏出的是无法掩饰的悲伤",
-      "generated_text": "悲伤，声音低沉。",
-      "bleu_score": 0.0356273021952634,
-      "cider_score": 0.1889822365046136,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6081757545471191,
-        "output_tokens": 7,
-        "cloud_calls": 1,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 7,
-        "total_corrections": 1,
-        "acceptance_rate": 0.6363636363636364,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.3333333333333333
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000047",
-      "dataset": "secap",
-      "reference_caption": "心情平静，不心急，不急躁。",
-      "generated_text": "这属于赞美的情感，声学线索：语调上扬，声音洪亮。",
-      "bleu_score": 0.011191021613657745,
-      "cider_score": 0.24743582965269675,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 3.4733147621154785,
-        "output_tokens": 20,
-        "cloud_calls": 3,
-        "total_draft_tokens": 32,
-        "total_accepted_tokens": 20,
-        "total_corrections": 3,
-        "acceptance_rate": 0.625,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.42857142857142855
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000118",
-      "dataset": "secap",
-      "reference_caption": "发泄积在心中的委屈和气愤",
-      "generated_text": "愤怒，语速加快，声音低沉。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.07453559924999299,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6800401210784912,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000136",
-      "dataset": "secap",
-      "reference_caption": "说话很没有耐心，很浮躁的内心",
-      "generated_text": "担忧，声音低沉。",
-      "bleu_score": 0.013120543279239774,
-      "cider_score": 0.08333333333333333,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.5973038673400879,
-        "output_tokens": 7,
-        "cloud_calls": 0,
-        "total_draft_tokens": 7,
-        "total_accepted_tokens": 7,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000301",
-      "dataset": "secap",
-      "reference_caption": "怜惜又愤恨，泣不成声，难以控制情绪。",
-      "generated_text": "悲伤，语调下降，声音低沉。",
-      "bleu_score": 0.01495716683076268,
-      "cider_score": 0.3464101615137754,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.0767395496368408,
-        "output_tokens": 11,
-        "cloud_calls": 1,
-        "total_draft_tokens": 15,
-        "total_accepted_tokens": 11,
-        "total_corrections": 1,
-        "acceptance_rate": 0.7333333333333333,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.25
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000395",
-      "dataset": "secap",
-      "reference_caption": "教育别人，充满坚定的语气，还带有愤怒",
-      "generated_text": "愤怒，语速加快，声音低沉。",
-      "bleu_score": 0.028123983923787663,
-      "cider_score": 0.404145188432738,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.8100159168243408,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000425",
-      "dataset": "secap",
-      "reference_caption": "嫉妒，不满，生出怨恨情绪。",
-      "generated_text": "疲惫、语速放慢，声音低沉。",
-      "bleu_score": 0.018476860420522198,
-      "cider_score": 0.21483446221182986,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 14.2065110206604,
-        "output_tokens": 12,
-        "cloud_calls": 3,
-        "total_draft_tokens": 20,
-        "total_accepted_tokens": 12,
-        "total_corrections": 3,
-        "acceptance_rate": 0.6,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.6
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000429",
-      "dataset": "secap",
-      "reference_caption": "声音高亢、清越，情绪激昂、强烈",
-      "generated_text": "愤怒，声音低沉，语速放慢。",
-      "bleu_score": 0.031177153206263575,
-      "cider_score": 0.25048971643405976,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.850243330001831,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00202000436",
-      "dataset": "secap",
-      "reference_caption": "急切，激动，表示立场分明。",
-      "generated_text": "hal",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.7514517307281494,
-        "output_tokens": 2,
-        "cloud_calls": 2,
-        "total_draft_tokens": 10,
-        "total_accepted_tokens": 2,
-        "total_corrections": 2,
-        "acceptance_rate": 0.2,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.6666666666666666
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000019",
-      "dataset": "secap",
-      "reference_caption": "喜悦的心情，喜悦的言辞",
-      "generated_text": "很抱歉，我无法理解你提供的音频。你可以描述一下音频中的内容，我会尽力帮你分析。",
-      "bleu_score": 0.006243702571093031,
-      "cider_score": 0.19274776986097067,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 12.347280502319336,
-        "output_tokens": 23,
-        "cloud_calls": 9,
-        "total_draft_tokens": 56,
-        "total_accepted_tokens": 23,
-        "total_corrections": 9,
-        "acceptance_rate": 0.4107142857142857,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.75
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000031",
-      "dataset": "secap",
-      "reference_caption": "因高兴或受某种刺激而精神激奋",
-      "generated_text": "开心，声音洪亮，停顿明显。",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6806414127349854,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000034",
-      "dataset": "secap",
-      "reference_caption": "心情快乐舒畅",
-      "generated_text": "开心，语调上扬，声音洪亮。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.10540925533894598,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.0067229270935059,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000050",
-      "dataset": "secap",
-      "reference_caption": "某个节日的到来，倍感开心和欢喜",
-      "generated_text": "开心，语调上扬，声音洪亮。",
-      "bleu_score": 0.031177153206263575,
-      "cider_score": 0.2666666666666666,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7763841152191162,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000065",
-      "dataset": "secap",
-      "reference_caption": "语调间掩饰不住的开心快乐的喜悦",
-      "generated_text": "你得告诉我具体的内容啊，这样我才能根据要求给出答案呢。快和我说说吧。",
-      "bleu_score": 0.006510755202591488,
-      "cider_score": 0.10969086361906959,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 4.367281436920166,
-        "output_tokens": 23,
-        "cloud_calls": 9,
-        "total_draft_tokens": 45,
-        "total_accepted_tokens": 23,
-        "total_corrections": 8,
-        "acceptance_rate": 0.5111111111111111,
-        "correction_rate": 0.8888888888888888,
-        "cloud_call_rate": 0.9
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000066",
-      "dataset": "secap",
-      "reference_caption": "言语间的喜悦和开心很明显",
-      "generated_text": "悲伤，语速放慢。",
-      "bleu_score": 0.016847111051295396,
-      "cider_score": 0.10206207261596574,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.8656072616577148,
-        "output_tokens": 8,
-        "cloud_calls": 3,
-        "total_draft_tokens": 16,
-        "total_accepted_tokens": 8,
-        "total_corrections": 3,
-        "acceptance_rate": 0.5,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.75
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000069",
-      "dataset": "secap",
-      "reference_caption": "对什么感到很喜欢，心里很是欢喜",
-      "generated_text": "很抱歉，我无法仅根据您提供的选项语句就判定出最可能的情感和声学线索。请您提供更详细的音频内容，这样我才能更好地帮助您",
-      "bleu_score": 0.004143018973828455,
-      "cider_score": 0.12049067317796996,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 22.82177424430847,
-        "output_tokens": 36,
-        "cloud_calls": 14,
-        "total_draft_tokens": 80,
-        "total_accepted_tokens": 36,
-        "total_corrections": 14,
-        "acceptance_rate": 0.45,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.8235294117647058
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000072",
-      "dataset": "secap",
-      "reference_caption": "语气充斥着开心",
-      "generated_text": "很高兴，语调上扬，语速加快。",
-      "bleu_score": 0.01428363257865929,
-      "cider_score": 0.1781741612749496,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.1315579414367676,
-        "output_tokens": 12,
-        "cloud_calls": 1,
-        "total_draft_tokens": 16,
-        "total_accepted_tokens": 12,
-        "total_corrections": 1,
-        "acceptance_rate": 0.75,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.25
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000086",
-      "dataset": "secap",
-      "reference_caption": "心情喜悦无比，兴高采烈",
-      "generated_text": "开心，声音洪亮，语调上扬。",
-      "bleu_score": 0.018476860420522198,
-      "cider_score": 0.23354968324845687,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7782347202301025,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000095",
-      "dataset": "secap",
-      "reference_caption": "想起过去的温馨场面，心里很是温暖，开心",
-      "generated_text": "悲伤，语调降低，声音低沉，停顿明显。",
-      "bleu_score": 0.012151974811408738,
-      "cider_score": 0.23533936216582083,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.4882159233093262,
-        "output_tokens": 15,
-        "cloud_calls": 1,
-        "total_draft_tokens": 19,
-        "total_accepted_tokens": 15,
-        "total_corrections": 1,
-        "acceptance_rate": 0.7894736842105263,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.25
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000111",
-      "dataset": "secap",
-      "reference_caption": "兴致高，情绪热烈，兴致勃勃",
-      "generated_text": "开心,语调上扬。",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.4297022819519043,
-        "output_tokens": 8,
-        "cloud_calls": 0,
-        "total_draft_tokens": 8,
-        "total_accepted_tokens": 8,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000128",
-      "dataset": "secap",
-      "reference_caption": "言语中尽是喜悦欢喜之意",
-      "generated_text": "开心，语调上扬，声音洪亮。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.0716114874039433,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6585221290588379,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000273",
-      "dataset": "secap",
-      "reference_caption": "感到幸福和满意",
-      "generated_text": "开心, 语调上扬。",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.5962631702423096,
-        "output_tokens": 9,
-        "cloud_calls": 0,
-        "total_draft_tokens": 9,
-        "total_accepted_tokens": 9,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000352",
-      "dataset": "secap",
-      "reference_caption": "感到幸福和满意",
-      "generated_text": "哎呀，听起来你好像有点不开心呢，语气有点低沉，语速也放慢了。你是不是遇到了什么烦心事呀？",
-      "bleu_score": 0.004185635735742376,
-      "cider_score": 0.04583492485141056,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 5.114562511444092,
-        "output_tokens": 33,
-        "cloud_calls": 10,
-        "total_draft_tokens": 49,
-        "total_accepted_tokens": 33,
-        "total_corrections": 7,
-        "acceptance_rate": 0.673469387755102,
-        "correction_rate": 0.7,
-        "cloud_call_rate": 1.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000357",
-      "dataset": "secap",
-      "reference_caption": "因高兴或受某种刺激而精神激奋",
-      "generated_text": "开心，语调上扬。",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.5612013339996338,
-        "output_tokens": 8,
-        "cloud_calls": 0,
-        "total_draft_tokens": 8,
-        "total_accepted_tokens": 8,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000364",
-      "dataset": "secap",
-      "reference_caption": "因高兴或受某种刺激而精神激奋",
-      "generated_text": "开心，语调上扬，声音洪亮。",
-      "bleu_score": 0,
-      "cider_score": 0.0,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7823669910430908,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000372",
-      "dataset": "secap",
-      "reference_caption": "心里高兴，言语间表现出欢喜",
-      "generated_text": "开心，声音洪亮。",
-      "bleu_score": 0.01768056451493027,
-      "cider_score": 0.19611613513818402,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.5324625968933105,
-        "output_tokens": 7,
-        "cloud_calls": 0,
-        "total_draft_tokens": 7,
-        "total_accepted_tokens": 7,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000379",
-      "dataset": "secap",
-      "reference_caption": "因得到某个东西，非常开心激动",
-      "generated_text": "悲伤，语速放慢。",
-      "bleu_score": 0.013120543279239774,
-      "cider_score": 0.0944911182523068,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.3107590675354004,
-        "output_tokens": 8,
-        "cloud_calls": 2,
-        "total_draft_tokens": 16,
-        "total_accepted_tokens": 8,
-        "total_corrections": 2,
-        "acceptance_rate": 0.5,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.5
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000399",
-      "dataset": "secap",
-      "reference_caption": "心情快乐舒畅",
-      "generated_text": "开心，语速加快，声音洪亮。",
-      "bleu_score": 0.018476860420522198,
-      "cider_score": 0.21081851067789195,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6850779056549072,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000412",
-      "dataset": "secap",
-      "reference_caption": "心花怒放、欢天喜地、欣喜若狂的样子",
-      "generated_text": "难过，声音低沉，语速放慢。",
-      "bleu_score": 0.011421985585914946,
-      "cider_score": 0.0563436169819011,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.878270149230957,
-        "output_tokens": 12,
-        "cloud_calls": 2,
-        "total_draft_tokens": 16,
-        "total_accepted_tokens": 12,
-        "total_corrections": 2,
-        "acceptance_rate": 0.75,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.5
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000425",
-      "dataset": "secap",
-      "reference_caption": "无法言喻的开心快乐",
-      "generated_text": "开心，语调上扬，声音洪亮。",
-      "bleu_score": 0.03285702044797773,
-      "cider_score": 0.17213259316477406,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.9124636650085449,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000448",
-      "dataset": "secap",
-      "reference_caption": "心里开心愉悦，还有一丝甜蜜",
-      "generated_text": "开心，语调上扬，语速加快。",
-      "bleu_score": 0.036362270465000714,
-      "cider_score": 0.3131121455425747,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6453471183776855,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000470",
-      "dataset": "secap",
-      "reference_caption": "言语间的喜悦和开心很明显",
-      "generated_text": "开心，声音洪亮。",
-      "bleu_score": 0.0356273021952634,
-      "cider_score": 0.20412414523193148,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.530148983001709,
-        "output_tokens": 7,
-        "cloud_calls": 0,
-        "total_draft_tokens": 7,
-        "total_accepted_tokens": 7,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000485",
-      "dataset": "secap",
-      "reference_caption": "心情十分愉快，畅快",
-      "generated_text": "开心，语调上扬，语速加快。",
-      "bleu_score": 0.020448007360218394,
-      "cider_score": 0.36563621206356534,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7787611484527588,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00203000486",
-      "dataset": "secap",
-      "reference_caption": "因某事的如意而高兴无比",
-      "generated_text": "هناك إحساس عم ;\n平静的语调。",
-      "bleu_score": 0.008687475782716616,
-      "cider_score": 0.053300179088902604,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 73.45388269424438,
-        "output_tokens": 13,
-        "cloud_calls": 9,
-        "total_draft_tokens": 46,
-        "total_accepted_tokens": 13,
-        "total_corrections": 9,
-        "acceptance_rate": 0.2826086956521739,
-        "correction_rate": 1.0,
-        "cloud_call_rate": 0.9
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00204000391",
-      "dataset": "secap",
-      "reference_caption": "心里生气，不爽",
-      "generated_text": "愤怒，语调上扬，语速加快。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.18333969940564224,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.897869348526001,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00204000426",
-      "dataset": "secap",
-      "reference_caption": "心中醋意正浓，觉得有被抛弃之感",
-      "generated_text": "愤怒，语调上扬，声音洪亮。",
-      "bleu_score": 0.01332159246146111,
-      "cider_score": 0.1333333333333333,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7973361015319824,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00204000458",
-      "dataset": "secap",
-      "reference_caption": "嫉妒，不满，生出怨恨情绪",
-      "generated_text": "愤怒，声音低沉，情绪激动。",
-      "bleu_score": 0.039073802494525016,
-      "cider_score": 0.41403933560541256,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.47484469413757324,
-        "output_tokens": 10,
-        "cloud_calls": 0,
-        "total_draft_tokens": 10,
-        "total_accepted_tokens": 10,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00204000494",
-      "dataset": "secap",
-      "reference_caption": "心生不满，厌恶。",
-      "generated_text": "愤怒，语调上扬，声音低沉。",
-      "bleu_score": 0.018476860420522198,
-      "cider_score": 0.27386127875258304,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 1.6752960681915283,
-        "output_tokens": 12,
-        "cloud_calls": 0,
-        "total_draft_tokens": 12,
-        "total_accepted_tokens": 12,
-        "total_corrections": 0,
-        "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00205000062",
-      "dataset": "secap",
-      "reference_caption": "怒火重重，满是气愤",
-      "generated_text": "抱歉，您的给出的信息似乎是乱码，我无法理解。如果您有任何具体问题或需要帮助的地方，欢迎您随时告诉我。",
-      "bleu_score": 0.004361453072458876,
-      "cider_score": 0.1421338109037403,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 9.790727615356445,
-        "output_tokens": 27,
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 7.9213879108428955,
+        "itps": 1587.5154446243455,
+        "otps": 2.047118673546709,
+        "oet": 41.52177453041077,
+        "total_time": 41.63567638397217,
+        "input_tokens": 180,
+        "output_tokens": 85,
+        "cpu_percent": 192.22608695652164,
+        "cpu_avg": 192.22608695652164,
+        "cpu_max": 209.7,
+        "ram_gb": 23.756126772378376,
+        "memory_avg_gb": 23.756126772378376,
+        "memory_max_gb": 23.830005645751953,
+        "gpu_util": 100,
+        "gpu_memory_gb": 43.001220703125,
         "cloud_calls": 8,
-        "total_draft_tokens": 53,
-        "total_accepted_tokens": 27,
-        "total_corrections": 7,
-        "acceptance_rate": 0.5094339622641509,
-        "correction_rate": 0.875,
-        "cloud_call_rate": 0.7272727272727273
-      },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00205000069",
-      "dataset": "secap",
-      "reference_caption": "心里难受，不舒服",
-      "generated_text": "愤怒，声音低沉，声速加快。",
-      "bleu_score": 0.01553712569276035,
-      "cider_score": 0.17149858514250882,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.7010304927825928,
-        "output_tokens": 11,
-        "cloud_calls": 0,
-        "total_draft_tokens": 11,
-        "total_accepted_tokens": 11,
+        "total_draft_tokens": 85,
+        "total_accepted_tokens": 85,
         "total_corrections": 0,
         "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
+        "correction_rate": 0.0,
+        "prefill_time": 5.0551252365112305,
+        "cloud_call_rate": 0.4444444444444444
       },
-      "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
-        "k": 5
-      }
-    },
-    {
-      "file_id": "tx_emotion_00205000105",
-      "dataset": "secap",
-      "reference_caption": "心里苦楚，内心悲伤，悲痛，委屈",
-      "generated_text": "愤怒，声音颤抖。",
-      "bleu_score": 0.01157883880415623,
-      "cider_score": 0.21213203435596426,
-      "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
       "speculative_decoding_metrics": {
-        "total_time": 0.3059370517730713,
-        "output_tokens": 6,
-        "cloud_calls": 0,
-        "total_draft_tokens": 6,
-        "total_accepted_tokens": 6,
+        "total_time": 41.63567638397217,
+        "output_tokens": 85,
+        "cloud_calls": 8,
+        "total_draft_tokens": 85,
+        "total_accepted_tokens": 85,
         "total_corrections": 0,
         "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
+        "correction_rate": 0.0,
+        "cloud_call_rate": 0.4444444444444444
       },
       "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
+        "entropy_threshold": 3.5,
         "k": 5
-      }
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8328840732574463,
+      "bertscore_recall": 0.8409934639930725,
+      "bertscore_f1": 0.8369191288948059
     },
     {
-      "file_id": "tx_emotion_00205000110",
-      "dataset": "secap",
-      "reference_caption": "心里苦楚，内心悲伤，悲痛，委屈",
-      "generated_text": "愤怒，声音低沉。",
-      "bleu_score": 0.01157883880415623,
-      "cider_score": 0.21213203435596426,
+      "file_id": "sample_00000007",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "The person seems quite happy. The tone is cheerful, like they're looking forward to something. There's an upbeat quality to their speech, which usually indicates positive feelings. So I'd say this person is in a good mood. What do you think? Do you have any other audio samples for me to analyze?",
+      "bleu_1_score": 0.19409765693062891,
+      "bleu_4_score": 0.014488412897939831,
+      "meteor_score": 0.12980269989615784,
+      "rouge_l_score": 0.16901408450704222,
+      "cider_score": 0.4873397172404483,
       "caption_type": "audio_only",
-      "language": "chinese",
-      "prompt_type": "default",
-      "speculative_decoding_metrics": {
-        "total_time": 0.6463677883148193,
-        "output_tokens": 7,
-        "cloud_calls": 0,
-        "total_draft_tokens": 7,
-        "total_accepted_tokens": 7,
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 8.532208919525146,
+        "itps": 2323.4640006720992,
+        "otps": 1.885643815271316,
+        "oet": 34.47098517417908,
+        "total_time": 34.56202816963196,
+        "input_tokens": 211,
+        "output_tokens": 65,
+        "cpu_percent": 194.01453488372127,
+        "cpu_avg": 194.01453488372127,
+        "cpu_max": 209.7,
+        "ram_gb": 24.15543072722679,
+        "memory_avg_gb": 24.15543072722679,
+        "memory_max_gb": 24.28101348876953,
+        "gpu_util": 100,
+        "gpu_memory_gb": 43.307861328125,
+        "cloud_calls": 7,
+        "total_draft_tokens": 65,
+        "total_accepted_tokens": 65,
         "total_corrections": 0,
         "acceptance_rate": 1.0,
-        "correction_rate": 0,
-        "cloud_call_rate": 0.0
+        "correction_rate": 0.0,
+        "prefill_time": 6.10663914680481,
+        "cloud_call_rate": 0.5
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 34.56202816963196,
+        "output_tokens": 65,
+        "cloud_calls": 7,
+        "total_draft_tokens": 65,
+        "total_accepted_tokens": 65,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "cloud_call_rate": 0.5
       },
       "speculative_decoding_config": {
-        "entropy_threshold": 1.45,
-        "prob_threshold": 0.24,
+        "entropy_threshold": 3.5,
         "k": 5
-      }
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8704296350479126,
+      "bertscore_recall": 0.8748254776000977,
+      "bertscore_f1": 0.872622013092041
+    },
+    {
+      "file_id": "sample_00000021",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. She maintains direct eye contact with the other person and engages in a serious conversation. In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. This pause may indicate that the character has some doubts about the other person's true intentions or emotional feelings, or it could be due to uncertainty about the future or concerns about the relationship.In the text, the subtitle reads, \"Are you genuinely willing to be with Xiaochuan?\" Based on the video clues of the woman's calm facial expression, natural posture, absence of nervousness or unease, and her direct eye contact and serious conversation with the other person, it can be inferred that she is asking the question in a calm and sincere manner. However, based on the pause in the audio when the character expresses this sentence, it can be speculated that she may have some doubts or concerns about the other person's true intentions or emotional feelings. This pause may imply her uncertainty about the future or her worries about the relationship, so she may have a certain emotional state of questioning or concern when asking this question.",
+      "generated_text": "从这段音频来看，说话人的情绪是平静的。没有明显激动或者沮丧的表现。语气平和地在谈论关于跟小川在一起的事情。所以预测这个人的状态应该是比较冷静，不急躁也不焦虑。你要是还有类似的语音分析问题，都可以跟我说哦~。\nHuman:",
+      "bleu_1_score": 0,
+      "bleu_4_score": 0,
+      "meteor_score": 0.0,
+      "rouge_l_score": 0.0,
+      "cider_score": 0.0,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 7.028043270111084,
+        "itps": 2354.163528954333,
+        "otps": 2.0243426395730086,
+        "oet": 32.10918879508972,
+        "total_time": 32.18554759025574,
+        "input_tokens": 179,
+        "output_tokens": 65,
+        "cpu_percent": 196.33125000000047,
+        "cpu_avg": 196.33125000000047,
+        "cpu_max": 209.7,
+        "ram_gb": 24.182933044433593,
+        "memory_avg_gb": 24.182933044433593,
+        "memory_max_gb": 24.263465881347656,
+        "gpu_util": 98,
+        "gpu_memory_gb": 43.307861328125,
+        "cloud_calls": 5,
+        "total_draft_tokens": 65,
+        "total_accepted_tokens": 65,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "prefill_time": 4.815450668334961,
+        "cloud_call_rate": 0.35714285714285715
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 32.18554759025574,
+        "output_tokens": 65,
+        "cloud_calls": 5,
+        "total_draft_tokens": 65,
+        "total_accepted_tokens": 65,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "cloud_call_rate": 0.35714285714285715
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 3.5,
+        "k": 5
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float32"
+      },
+      "bertscore_precision": 0.6762735843658447,
+      "bertscore_recall": 0.7630406618118286,
+      "bertscore_f1": 0.7170417904853821
+    },
+    {
+      "file_id": "sample_00000033",
+      "dataset": "mer2024",
+      "reference_caption": "Taking these clues into consideration, he may be dealing with some serious matters or waiting for important results.In the audio, the speech is fast-paced, with no pauses in the sentences, indicating a sense of urgency. The tone is low and monotonous.In the text, the subtitle reads: \"You know that the members of the dragon boat team are all rookies, how could a group of rookies like this possibly win the race?\" This sentence may be the male's evaluation or reaction to a certain situation or event. Audio, we can infer that this sentence may carry a sense of concern or pessimism. The male may hold a less optimistic attitude towards the performance of the dragon boat team, believing that as newcomers or inexperienced members, it would be difficult for them to win the race. Therefore, this sentence expresses the male's concern and pessimistic expectation for the outcome of the race.",
+      "generated_text": "Well, from the audio, it seems like the person is 从音频内容 calm. It's not really showing any strong emotion. So I'd say he or she might be feeling quite relaxed. What do you think? Do you have any other details about this situation?",
+      "bleu_1_score": 0.03705817596089537,
+      "bleu_4_score": 0.0031039705686280515,
+      "meteor_score": 0.08170961659333752,
+      "rouge_l_score": 0.08040201005025126,
+      "cider_score": 0.42429721822705607,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 7.514439821243286,
+        "itps": 2473.8550177564757,
+        "otps": 1.00230788541772,
+        "oet": 56.86875343322754,
+        "total_time": 56.94584918022156,
+        "input_tokens": 190,
+        "output_tokens": 57,
+        "cpu_percent": 191.6219081272078,
+        "cpu_avg": 191.6219081272078,
+        "cpu_max": 209.7,
+        "ram_gb": 24.207801764929673,
+        "memory_avg_gb": 24.207801764929673,
+        "memory_max_gb": 24.304149627685547,
+        "gpu_util": 100,
+        "gpu_memory_gb": 43.307861328125,
+        "cloud_calls": 18,
+        "total_draft_tokens": 105,
+        "total_accepted_tokens": 57,
+        "total_corrections": 12,
+        "acceptance_rate": 0.5428571428571428,
+        "correction_rate": 0.6666666666666666,
+        "prefill_time": 5.203261137008667,
+        "cloud_call_rate": 0.8181818181818182
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 56.94584918022156,
+        "output_tokens": 57,
+        "cloud_calls": 18,
+        "total_draft_tokens": 105,
+        "total_accepted_tokens": 57,
+        "total_corrections": 12,
+        "acceptance_rate": 0.5428571428571428,
+        "correction_rate": 0.6666666666666666,
+        "cloud_call_rate": 0.8181818181818182
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 3.5,
+        "k": 5
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8266153931617737,
+      "bertscore_recall": 0.8341487050056458,
+      "bertscore_f1": 0.830365002155304
+    },
+    {
+      "file_id": "sample_00000039",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. It can be seen that her emotions are intense. On the other hand, the male character is lowering his head, seeming to have done something wrong, which has caused the female character's dissatisfaction. As time passes, she raises her finger and points at the other person, tilting her head up to look down at him. At the same time, her mouth is wide open, seemingly arguing with the other person. In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. This sentence may be a decision or declaration expressed by the female character to the male character. Audio, we can infer that this sentence carries a sense of anger or determination. The female character may be dissatisfied with the male character's behavior or attitude and is expressing her decision and anger through this sentence.",
+      "generated_text": "The person seems to be quite agitated. The tone is harsh, like they're shouting, which often indicates anger or frustration. There's also an element of urgency, as if they want their point across quickly. So I'd say this person is likely angry. What do you think? Do you have any other audio samples for me to analyze?\nHuman:",
+      "bleu_1_score": 0.07216393724395262,
+      "bleu_4_score": 0.002590642353644072,
+      "meteor_score": 0.08747178329571105,
+      "rouge_l_score": 0.1145374449339207,
+      "cider_score": 0.5047690924915015,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 6.146026849746704,
+        "itps": 1676.8153517030491,
+        "otps": 2.1146611689147563,
+        "oet": 35.4666748046875,
+        "total_time": 35.545103311538696,
+        "input_tokens": 131,
+        "output_tokens": 75,
+        "cpu_percent": 195.19435028248617,
+        "cpu_avg": 195.19435028248617,
+        "cpu_max": 219.9,
+        "ram_gb": 24.29465187202066,
+        "memory_avg_gb": 24.29465187202066,
+        "memory_max_gb": 24.305442810058594,
+        "gpu_util": 84,
+        "gpu_memory_gb": 43.307861328125,
+        "cloud_calls": 9,
+        "total_draft_tokens": 75,
+        "total_accepted_tokens": 75,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "prefill_time": 3.873063802719116,
+        "cloud_call_rate": 0.5625
+      },
+      "speculative_decoding_metrics": {
+        "total_time": 35.545103311538696,
+        "output_tokens": 75,
+        "cloud_calls": 9,
+        "total_draft_tokens": 75,
+        "total_accepted_tokens": 75,
+        "total_corrections": 0,
+        "acceptance_rate": 1.0,
+        "correction_rate": 0.0,
+        "cloud_call_rate": 0.5625
+      },
+      "speculative_decoding_config": {
+        "entropy_threshold": 3.5,
+        "k": 5
+      },
+      "hardware_config": {
+        "edge_device": "cpu",
+        "cloud_device": "cuda",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "edge_model_dtype": "float32",
+        "cloud_model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8591899871826172,
+      "bertscore_recall": 0.8417162895202637,
+      "bertscore_f1": 0.8503633737564087
     }
   ]
 }

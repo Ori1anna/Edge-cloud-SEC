@@ -1,0 +1,14 @@
+==========================================
+Speculative Decoding Experiment
+==========================================
+Job ID: 17103876
+Node: spartan-gpgpu013
+Start time: Mon 27 Oct 2025 21:25:43 AEDT
+GPU: NVIDIA H100 80GB HBM3
+CUDA Version: Cuda compilation tools, release 12.4, V12.4.131
+==========================================
+Starting Speculative Decoding experiment...
+==========================================
+Speculative Decoding experiment completed!
+End time: Tue 28 Oct 2025 02:46:40 AEDT
+==========================================

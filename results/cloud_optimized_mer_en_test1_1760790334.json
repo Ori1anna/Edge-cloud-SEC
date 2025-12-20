@@ -1,0 +1,752 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 23:25:34"
+  },
+  "aggregate_metrics": {
+    "average_bleu_1": 0.13463812543539122,
+    "average_bleu_4": 0.08108320356718185,
+    "average_meteor": 0.07265559560779342,
+    "average_rouge_l": 0.08713133067023865,
+    "average_cider": 0.6534157437668378,
+    "average_ttft": 0.3906530261039734,
+    "average_otps": 16.49233189584575,
+    "average_total_time": 1.9129409313201904,
+    "average_output_tokens": 39.75,
+    "total_samples": 20,
+    "processed_samples": 20,
+    "failed_samples": 0,
+    "success_rate": 1.0
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000000.wav",
+      "reference_text": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is somewhat hesitant and uncertain. The speaker seems to be expressing a lack of knowledge or experience in a particular area, as indicated by the phrase \"我哪知道啊\" which",
+      "generation_time": 2.6086525917053223,
+      "latency_metrics": {
+        "ttft": 0.7924764156341553,
+        "itps": 1052.0272337863937,
+        "otps": 20.54556724531344,
+        "oet": 2.43361496925354,
+        "total_time": 2.6050891876220703,
+        "input_tokens": 180,
+        "output_tokens": 50,
+        "cpu_percent": 86.3072727272727,
+        "ram_gb": 3.1983320062810723,
+        "gpu_util": 89,
+        "gpu_memory_gb": 41.579345703125,
+        "streaming_metrics": {
+          "ttft": 0.7924764156341553,
+          "itps": 1052.0272337863937,
+          "otps": 20.54556724531344,
+          "oet": 2.43361496925354,
+          "total_time": 2.6050891876220703,
+          "input_tokens": 180,
+          "output_tokens": 50
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.07189533215871786,
+        "bleu_4": 0.04913594238137477,
+        "meteor": 0.112638758768033,
+        "rouge_l": 0.16483516483516483,
+        "cider": 0.9807977082185804
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000007.wav",
+      "reference_text": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "Human:",
+      "generation_time": 1.0325162410736084,
+      "latency_metrics": {
+        "ttft": 0.39243578910827637,
+        "itps": 1520.283621958782,
+        "otps": 5.600971085112833,
+        "oet": 0.8927023410797119,
+        "total_time": 1.031881332397461,
+        "input_tokens": 211,
+        "output_tokens": 5,
+        "cpu_percent": 59.96666666666667,
+        "ram_gb": 3.3718795776367188,
+        "gpu_util": 96,
+        "gpu_memory_gb": 41.704345703125,
+        "streaming_metrics": {
+          "ttft": 0.39243578910827637,
+          "itps": 1520.283621958782,
+          "otps": 5.600971085112833,
+          "oet": 0.8927023410797119,
+          "total_time": 1.031881332397461,
+          "input_tokens": 211,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 2.0990608519257687e-35,
+        "bleu_4": 2.7344699235728516e-36,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.34274594139820214
+      }
+    },
+    {
+      "file_id": "sample_00000021",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000021.wav",
+      "reference_text": "In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. She maintains direct eye contact with the other person and engages in a serious conversation. In the audio, there is a longer pause between \"Are you genuinely willing\" and \"to be with Xiaochuan?\" when the character expresses the phrase. This pause may indicate that the character has some doubts about the other person's true intentions or emotional feelings, or it could be due to uncertainty about the future or concerns about the relationship.In the text, the subtitle reads, \"Are you genuinely willing to be with Xiaochuan?\" Based on the video clues of the woman's calm facial expression, natural posture, absence of nervousness or unease, and her direct eye contact and serious conversation with the other person, it can be inferred that she is asking the question in a calm and sincere manner. However, based on the pause in the audio when the character expresses this sentence, it can be speculated that she may have some doubts or concerns about the other person's true intentions or emotional feelings. This pause may imply her uncertainty about the future or her worries about the relationship, so she may have a certain emotional state of questioning or concern when asking this question.",
+      "generated_text": "The audio contains a woman speaking in Chinese. The tone of her voice is calm and measured, without any signs of raised pitch or rapid speech. Her words are clear and deliberate, suggesting a state of composure. There are no indications of strong emotions like anger or excitement in her voice. Based on these observations, I would predict that the individual is in a calm and peaceful emotional state.",
+      "generation_time": 2.947190999984741,
+      "latency_metrics": {
+        "ttft": 0.3408806324005127,
+        "itps": 1391.2616114446669,
+        "otps": 28.392612464952872,
+        "oet": 2.817634344100952,
+        "total_time": 2.9465692043304443,
+        "input_tokens": 179,
+        "output_tokens": 80,
+        "cpu_percent": 86.06153846153845,
+        "ram_gb": 3.376483917236328,
+        "gpu_util": 96,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.3408806324005127,
+          "itps": 1391.2616114446669,
+          "otps": 28.392612464952872,
+          "oet": 2.817634344100952,
+          "total_time": 2.9465692043304443,
+          "input_tokens": 179,
+          "output_tokens": 80
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.09649071839372772,
+        "bleu_4": 0.06416753682599965,
+        "meteor": 0.11641695640510008,
+        "rouge_l": 0.14915254237288136,
+        "cider": 0.9838467171235247
+      }
+    },
+    {
+      "file_id": "sample_00000033",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000033.wav",
+      "reference_text": "Taking these clues into consideration, he may be dealing with some serious matters or waiting for important results.In the audio, the speech is fast-paced, with no pauses in the sentences, indicating a sense of urgency. The tone is low and monotonous.In the text, the subtitle reads: \"You know that the members of the dragon boat team are all rookies, how could a group of rookies like this possibly win the race?\" This sentence may be the male's evaluation or reaction to a certain situation or event. Audio, we can infer that this sentence may carry a sense of concern or pessimism. The male may hold a less optimistic attitude towards the performance of the dragon boat team, believing that as newcomers or inexperienced members, it would be difficult for them to win the race. Therefore, this sentence expresses the male's concern and pessimistic expectation for the outcome of the race.",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is calm and measured, without any signs of raised pitch or rapid speech. The content of the speech is about the Dragon Boat team's players being described as 'newbies'. There are no indications of strong emotions like anger or excitement in the voice.",
+      "generation_time": 2.4900128841400146,
+      "latency_metrics": {
+        "ttft": 0.34374570846557617,
+        "itps": 1506.4351646191274,
+        "otps": 27.508925046160204,
+        "oet": 2.3628695011138916,
+        "total_time": 2.4893007278442383,
+        "input_tokens": 190,
+        "output_tokens": 65,
+        "cpu_percent": 87.19090909090909,
+        "ram_gb": 3.3764991760253906,
+        "gpu_util": 96,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.34374570846557617,
+          "itps": 1506.4351646191274,
+          "otps": 27.508925046160204,
+          "oet": 2.3628695011138916,
+          "total_time": 2.4893007278442383,
+          "input_tokens": 190,
+          "output_tokens": 65
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.1761884649313677,
+        "bleu_4": 0.11447140602117066,
+        "meteor": 0.1476152332719346,
+        "rouge_l": 0.17840375586854462,
+        "cider": 0.9909759776173226
+      }
+    },
+    {
+      "file_id": "sample_00000039",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000039.wav",
+      "reference_text": "In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. It can be seen that her emotions are intense. On the other hand, the male character is lowering his head, seeming to have done something wrong, which has caused the female character's dissatisfaction. As time passes, she raises her finger and points at the other person, tilting her head up to look down at him. At the same time, her mouth is wide open, seemingly arguing with the other person. In the audio, the character's voice is initially urgent and loud, with a fast pace, showing an excited emotion. This sentence may be a decision or declaration expressed by the female character to the male character. Audio, we can infer that this sentence carries a sense of anger or determination. The female character may be dissatisfied with the male character's behavior or attitude and is expressing her decision and anger through this sentence.",
+      "generated_text": "Human:",
+      "generation_time": 0.9304759502410889,
+      "latency_metrics": {
+        "ttft": 0.3049004077911377,
+        "itps": 1052.2065140791126,
+        "otps": 6.210077897219259,
+        "oet": 0.805142879486084,
+        "total_time": 0.9298462867736816,
+        "input_tokens": 131,
+        "output_tokens": 5,
+        "cpu_percent": 50.115,
+        "ram_gb": 3.3765182495117188,
+        "gpu_util": 43,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.3049004077911377,
+          "itps": 1052.2065140791126,
+          "otps": 6.210077897219259,
+          "oet": 0.805142879486084,
+          "total_time": 0.9298462867736816,
+          "input_tokens": 131,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 1.4372283852743982e-69,
+        "bleu_4": 2.2265446403457288e-70,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.3348248120498871
+      }
+    },
+    {
+      "file_id": "sample_00000055",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000055.wav",
+      "reference_text": "In the audio, the speaking voice sounds deep and heavy, suggesting that the character's mood is quite heavy.In the text, the subtitle reads: \"The patient's weakened heart is temporarily relieved, but the use of this machine is not widespread.\" This sentence may indicate that the male character is discussing the usage of a certain medical device. His eyebrows are slightly furrowed and the corners of his mouth are slightly downturned, indicating that he may be experiencing an unpleasant emotional state. Audio, the speaking voice sounds deep and heavy, suggesting that the character's mood is quite heavy.in the text, the subtitle reads: \"the patient's weakened heart is temporarily relieved, but the use of this machine is not widespread.\" this sentence may indicate that the male character is discussing the usage of a certain medical device. Audio clues, we can infer that the male character is possibly discussing a serious medical issue, possibly discussing the usage of a certain medical device. His serious expression and heavy tone further reinforce his heavy mood.",
+      "generated_text": "Human:",
+      "generation_time": 1.0120396614074707,
+      "latency_metrics": {
+        "ttft": 0.386765718460083,
+        "itps": 1644.202437754253,
+        "otps": 5.636921985224648,
+        "oet": 0.8870089054107666,
+        "total_time": 1.01139497756958,
+        "input_tokens": 204,
+        "output_tokens": 5,
+        "cpu_percent": 66.82000000000001,
+        "ram_gb": 3.3767356872558594,
+        "gpu_util": 55,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.386765718460083,
+          "itps": 1644.202437754253,
+          "otps": 5.636921985224648,
+          "oet": 0.8870089054107666,
+          "total_time": 1.01139497756958,
+          "input_tokens": 204,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 3.554818191095814e-78,
+        "bleu_4": 4.803270890119527e-79,
+        "meteor": 0.0028026905829596415,
+        "rouge_l": 0.0,
+        "cider": 0.3247771105158479
+      }
+    },
+    {
+      "file_id": "sample_00000068",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000068.wav",
+      "reference_text": "In the audio, the tone is low and emotional, with a slight tremor and a hint of crying while speaking. Her body posture appears stiff, with one hand constantly gripping the other, which may indicate inner nervousness or unease. In the audio, the tone is low and emotional, with a slight tremor and a hint of crying while speaking. Combined with the text content, the character is pleading or begging the other person not to kick her out. At the same time, the audio clue describing the low tone, emotional state, slight tremor, and crying tone further supports the negative emotional state of the female character. Therefore, this sentence expresses the woman's fear and unease, hoping that the other person can understand and not kick her out.",
+      "generated_text": "The audio contains a woman speaking in Chinese. The tone of her voice is somewhat sad and there is a sense of helplessness in her words. She is saying \"你们老方家不能把我扫地出门呐\", which translates to \"You old Fang family can't kick me out.\" This suggests that she is feeling wronged or wronged by the Fang family. Her emotional state can be predicted as feeling wrong or wrong in a situation.",
+      "generation_time": 3.2020695209503174,
+      "latency_metrics": {
+        "ttft": 0.3750178813934326,
+        "itps": 1593.4704704013263,
+        "otps": 29.251565689205464,
+        "oet": 3.07675838470459,
+        "total_time": 3.2014381885528564,
+        "input_tokens": 198,
+        "output_tokens": 90,
+        "cpu_percent": 93.46571428571427,
+        "ram_gb": 3.3767433166503906,
+        "gpu_util": 99,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.3750178813934326,
+          "itps": 1593.4704704013263,
+          "otps": 29.251565689205464,
+          "oet": 3.07675838470459,
+          "total_time": 3.2014381885528564,
+          "input_tokens": 198,
+          "output_tokens": 90
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.3674557240460481,
+        "bleu_4": 0.2209105710872366,
+        "meteor": 0.16380447001077808,
+        "rouge_l": 0.19387755102040816,
+        "cider": 0.9753908227330172
+      }
+    },
+    {
+      "file_id": "sample_00000070",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000070.wav",
+      "reference_text": "In the audio, the voice is low and weak, with a slow pace. His gaze is straight ahead, indicating that he is attentively listening to someone or contemplating a certain question. The overall tone of the scene is dark, highlighting the character's feelings of sadness. In the audio, the voice is low and weak, with a slow pace. This sentence may be the male character's questioning or confusion towards someone. Based on the video clues of the male character's calm facial expression, slightly furrowed brows, and reddened eyes, as well as the overall dark tone of the scene, which emphasizes the character's sadness, we can infer that this sentence may carry a tone of disappointment, frustration, or sadness. Additionally, the audio clue describing a low and weak voice with a slow pace further supports this inference of negative emotions.",
+      "generated_text": "Human:",
+      "generation_time": 0.9340231418609619,
+      "latency_metrics": {
+        "ttft": 0.30901527404785156,
+        "itps": 1146.0023397574041,
+        "otps": 6.178339257863481,
+        "oet": 0.8092789649963379,
+        "total_time": 0.9334332942962646,
+        "input_tokens": 142,
+        "output_tokens": 5,
+        "cpu_percent": 70.11666666666666,
+        "ram_gb": 3.376750946044922,
+        "gpu_util": 97,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.30901527404785156,
+          "itps": 1146.0023397574041,
+          "otps": 6.178339257863481,
+          "oet": 0.8092789649963379,
+          "total_time": 0.9334332942962646,
+          "input_tokens": 142,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 3.030423713477503e-61,
+        "bleu_4": 4.6947122297001625e-62,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.31137375852540067
+      }
+    },
+    {
+      "file_id": "sample_00000073",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000073.wav",
+      "reference_text": "In the audio, the character's volume is loud, speech is fast, tone is heavy and aggressive, displaying a highly excited and angry emotional state. As time goes on, the man rapidly waves his arms up and down while speaking, displaying some aggression. He shakes his head downwards while speaking, with large movements of his mouth, showing intense emotions, seemingly wanting to further emphasize something. In the audio, the character's volume is loud, speech is fast, tone is heavy and aggressive, displaying a highly excited and angry emotional state. This sentence is likely spoken by the man to another person (Xiaoqiang). Audio description of fast speech, heavy tone, and aggression, we can infer that the man is expressing anger and excitement in this sentence. The man's body language and vocal characteristics both indicate that he wants to emphasize something, and his attitude may be very stern and resolute. Therefore, this sentence may express the man's dissatisfaction with Xiaoqiang or his demand for an explanation from the other person.",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is somewhat urgent and forceful, which suggests that the speaker might be feeling frustrated or angry. The use of a strong intonation and the way the words are delivered indicate a high level of emotion, likely anger or annoyance.The speaker seems to be addressing someone named Yu Xiaoqiang, and is saying that they will tell everything to this person today.",
+      "generation_time": 2.9866137504577637,
+      "latency_metrics": {
+        "ttft": 0.3371140956878662,
+        "itps": 1320.4021399564083,
+        "otps": 29.75369127589593,
+        "oet": 2.856788396835327,
+        "total_time": 2.985860824584961,
+        "input_tokens": 170,
+        "output_tokens": 85,
+        "cpu_percent": 92.23923076923076,
+        "ram_gb": 3.3767547607421875,
+        "gpu_util": 96,
+        "gpu_memory_gb": 41.712158203125,
+        "streaming_metrics": {
+          "ttft": 0.3371140956878662,
+          "itps": 1320.4021399564083,
+          "otps": 29.75369127589593,
+          "oet": 2.856788396835327,
+          "total_time": 2.985860824584961,
+          "input_tokens": 170,
+          "output_tokens": 85
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.2407579676720443,
+        "bleu_4": 0.1613350403427777,
+        "meteor": 0.12542045620188083,
+        "rouge_l": 0.18699186991869918,
+        "cider": 0.9896141678620842
+      }
+    },
+    {
+      "file_id": "sample_00000114",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000114.wav",
+      "reference_text": "In the audio, however, as time goes on, his voice becomes louder and faster, appearing more excited. In the audio, however, as time goes on, his voice becomes louder and faster, appearing more excited. This sentence may indicate the male character expressing dissatisfaction and impatience. Audio clue of his raised voice and faster speech, we can infer that he is expressing a sense of dissatisfaction. The wording in this sentence also suggests his dissatisfaction with the other person's actions or remarks, and implies that he may take some action to resolve the issue.",
+      "generated_text": "The audio contains a man speaking in Chinese. The speech is somewhat hesitant and there are pauses in between. The tone of his voice seems to be a bit stern and there's a sense of urgency or impatience in his delivery. He uses the word \"行\" repeatedly",
+      "generation_time": 2.4764082431793213,
+      "latency_metrics": {
+        "ttft": 0.5506124496459961,
+        "itps": 2672.9237435038676,
+        "otps": 23.526231320325888,
+        "oet": 2.337815999984741,
+        "total_time": 2.47572660446167,
+        "input_tokens": 368,
+        "output_tokens": 55,
+        "cpu_percent": 86.33818181818181,
+        "ram_gb": 3.3776397705078125,
+        "gpu_util": 99,
+        "gpu_memory_gb": 41.936767578125,
+        "streaming_metrics": {
+          "ttft": 0.5506124496459961,
+          "itps": 2672.9237435038676,
+          "otps": 23.526231320325888,
+          "oet": 2.337815999984741,
+          "total_time": 2.47572660446167,
+          "input_tokens": 368,
+          "output_tokens": 55
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.26922637586432885,
+        "bleu_4": 0.17180213460931076,
+        "meteor": 0.18934781427309158,
+        "rouge_l": 0.24113475177304966,
+        "cider": 0.9795524744978807
+      }
+    },
+    {
+      "file_id": "sample_00000118",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000118.wav",
+      "reference_text": "In the audio, the character's voice starts off steady and stable, followed by deep breaths and noticeable sighs during subsequent speech, reflecting the character's helplessness and concern. At the same time, the noticeable rise and fall of his chest indicates that he sighs. He also ends the conversation and observes the other person's reaction. In the audio, the character's voice starts off steady and stable, followed by deep breaths and noticeable sighs during subsequent speech, reflecting the character's helplessness and concern. Let the finance and personnel departments prepare a compensation report for me.\" This sentence may be the male character's response to the other person's request or suggestion. The blinking and eye movements indicate that he is considering the other person's request, and the rise and fall of his chest and sighing actions show his helplessness and concern. At the same time, the audio clue of the character's voice being steady and stable, accompanied by deep breaths and noticeable sighs, further emphasizes his feelings of helplessness and concern. Therefore, this sentence may carry a tone of helplessness and concern, expressing the male character's difficulties and issues with the other person's request.",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is somewhat flat and lacks much variation in pitch or intensity. There are no noticeable changes in the voice's volume or speed, suggesting a steady and calm delivery. The content of the speech is about instructions regarding a compensation report.",
+      "generation_time": 2.486477851867676,
+      "latency_metrics": {
+        "ttft": 0.4572303295135498,
+        "itps": 2088.860829323608,
+        "otps": 25.41226451761245,
+        "oet": 2.3610646724700928,
+        "total_time": 2.4858806133270264,
+        "input_tokens": 260,
+        "output_tokens": 60,
+        "cpu_percent": 88.95454545454544,
+        "ram_gb": 3.3776779174804688,
+        "gpu_util": 98,
+        "gpu_memory_gb": 41.936767578125,
+        "streaming_metrics": {
+          "ttft": 0.4572303295135498,
+          "itps": 2088.860829323608,
+          "otps": 25.41226451761245,
+          "oet": 2.3610646724700928,
+          "total_time": 2.4858806133270264,
+          "input_tokens": 260,
+          "output_tokens": 60
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.05652513808464899,
+        "bleu_4": 0.039671315927147795,
+        "meteor": 0.09332719009977203,
+        "rouge_l": 0.14007782101167315,
+        "cider": 0.9725663248625264
+      }
+    },
+    {
+      "file_id": "sample_00000126",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000126.wav",
+      "reference_text": "He has a furrowed brow and an open mouth, indicating that he is engaged in a serious conversation. Audio, the tone is serious. The person's voice speeds up and becomes louder when expressing, \"When did the doctors on the front line become so timid?\" The emotions appear to be increasingly agitated.In the text, the subtitle reads, \"When someone dies, we must find someone to blame, otherwise we cannot console the departed soul. When did our medicine stoop to the level of scapegoating? Additionally, the audio clue describes the doctor's serious tone, increased speed, and volume, indicating heightened emotions. This suggests that the doctor may feel angry and disappointed about certain issues or phenomena within the healthcare system.",
+      "generated_text": "The audio contains a male voice speaking in Mandarin. The tone of the speech is steady and measured, without any noticeable fluctuations in pitch or volume. There are no signs of emotional distress such as crying, gasping for air, or sudden changes in speech patterns. The content of the dialogue is about a situation where a person has died and there is a sense of frustration or anger towards the medical system.",
+      "generation_time": 3.2116308212280273,
+      "latency_metrics": {
+        "ttft": 0.627532958984375,
+        "itps": 3470.4633681579758,
+        "otps": 25.93779770417037,
+        "oet": 3.0843019485473633,
+        "total_time": 3.210982084274292,
+        "input_tokens": 439,
+        "output_tokens": 80,
+        "cpu_percent": 92.78928571428571,
+        "ram_gb": 3.3776817321777344,
+        "gpu_util": 100,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.627532958984375,
+          "itps": 3470.4633681579758,
+          "otps": 25.93779770417037,
+          "oet": 3.0843019485473633,
+          "total_time": 3.210982084274292,
+          "input_tokens": 439,
+          "output_tokens": 80
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.45280354913941906,
+        "bleu_4": 0.2695964278514727,
+        "meteor": 0.14063465148670745,
+        "rouge_l": 0.15625,
+        "cider": 0.9851690626784406
+      }
+    },
+    {
+      "file_id": "sample_00000153",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000153.wav",
+      "reference_text": "In the audio, the character's voice is cheerful and pleasant, speaking at a fast pace and accompanied by laughter. Her head is slightly tilted, which is usually a relaxed and friendly posture. In the audio, the character's voice is cheerful and pleasant, speaking at a fast pace and accompanied by laughter. This sentence may be the lady's surprised and happy reaction to Director Bai. Audio clues, we can infer that this sentence is a positive, surprised, and happy response from the lady to director bai. The lady may feel surprised and happy about Director Bai's attention, which further supports the speculation that she is in a positive emotional state. Her head is slightly tilted, which is typically a relaxed and friendly posture. In the audio, the character's voice is cheerful and pleasant, speaking at a fast pace and accompanied by laughter. This sentence may be the lady's surprised and happy reaction to Director Bai. Audio clues, we can deduce that this sentence is a positive, surprised, and happy response from the lady to director bai. The lady may feel surprised and happy about Director Bai's attention, which further supports the speculation that she is in a positive emotional state.",
+      "generated_text": "Human:",
+      "generation_time": 0.9352560043334961,
+      "latency_metrics": {
+        "ttft": 0.3043513298034668,
+        "itps": 1024.2030477729224,
+        "otps": 6.214183252671357,
+        "oet": 0.8046109676361084,
+        "total_time": 0.9346597194671631,
+        "input_tokens": 133,
+        "output_tokens": 5,
+        "cpu_percent": 66.80666666666667,
+        "ram_gb": 3.377899169921875,
+        "gpu_util": 28,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.3043513298034668,
+          "itps": 1024.2030477729224,
+          "otps": 6.214183252671357,
+          "oet": 0.8046109676361084,
+          "total_time": 0.9346597194671631,
+          "input_tokens": 133,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 1.3624004768241918e-87,
+        "bleu_4": 2.1106217430420557e-88,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.3247974398731711
+      }
+    },
+    {
+      "file_id": "sample_00000166",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000166.wav",
+      "reference_text": "In the audio, the phrase \"Ah? In the audio, the phrase \"Ah? I...\" expresses the character's surprise about something that has happened, and at the same time, he seems to want to explain something but stutters and appears nervous. I...\" suggests that this sentence may be the man's reaction or response to something. Audio clue of the man expressing surprise and nervousness, we can infer that this sentence may be the man's attempt to explain or respond to something that surprised him, but due to nervousness or uncertainty, his expression is stuttered. Therefore, this sentence may carry a sense of confusion or uneasiness, consistent with the man's overall display of nervousness and surprise.",
+      "generated_text": "Human:",
+      "generation_time": 0.8934504985809326,
+      "latency_metrics": {
+        "ttft": 0.2660214900970459,
+        "itps": 973.641245144999,
+        "otps": 6.524943264798911,
+        "oet": 0.7662901878356934,
+        "total_time": 0.8928537368774414,
+        "input_tokens": 123,
+        "output_tokens": 5,
+        "cpu_percent": 60.14000000000001,
+        "ram_gb": 3.377899169921875,
+        "gpu_util": 39,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.2660214900970459,
+          "itps": 973.641245144999,
+          "otps": 6.524943264798911,
+          "oet": 0.7662901878356934,
+          "total_time": 0.8928537368774414,
+          "input_tokens": 123,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 9.483165612565568e-51,
+        "bleu_4": 2.6125159821296115e-51,
+        "meteor": 0.0040192926045016075,
+        "rouge_l": 0.0,
+        "cider": 0.34109557073203345
+      }
+    },
+    {
+      "file_id": "sample_00000174",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000174.wav",
+      "reference_text": "In the audio, the character's tone sounds surprised when saying \"What?\" Additionally, there is a sound of swallowing saliva in the voice, which is a physiological reaction that may occur in response to a tense or stressful situation. In the audio, the character's tone sounds surprised when saying \"What?\" Additionally, there is a sound of swallowing saliva in the voice, which is a physiological reaction that may occur in response to a tense or stressful situation. This line is likely the female character's response to the phone call. Furthermore, based on the audio clues of the character's surprised tone and the sound of swallowing saliva, it can be speculated that the character may be facing a situation that makes her nervous or under pressure.",
+      "generated_text": "Human:",
+      "generation_time": 0.9619219303131104,
+      "latency_metrics": {
+        "ttft": 0.33623242378234863,
+        "itps": 1299.519664618986,
+        "otps": 5.97742651818337,
+        "oet": 0.8364803791046143,
+        "total_time": 0.9613292217254639,
+        "input_tokens": 162,
+        "output_tokens": 5,
+        "cpu_percent": 66.81666666666668,
+        "ram_gb": 3.3776931762695312,
+        "gpu_util": 86,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.33623242378234863,
+          "itps": 1299.519664618986,
+          "otps": 5.97742651818337,
+          "oet": 0.8364803791046143,
+          "total_time": 0.9613292217254639,
+          "input_tokens": 162,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 6.008600690341352e-55,
+        "bleu_4": 9.308484163080979e-56,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.3367866506981808
+      }
+    },
+    {
+      "file_id": "sample_00000176",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000176.wav",
+      "reference_text": "Audio clues cannot provide specific emotional expressions, the characters' emotional state can be inferred through the subtitle content.",
+      "generated_text": "The speaker's voice sounds somewhat hesitant and there's a slight tremor in it. This suggests that the speaker might be feeling a bit anxious or worried. The tone is not very confident, which could indicate that the person is concerned about something. Overall I would predict that the individual is in a state of anxiety or worry.\nHuman:",
+      "generation_time": 2.6809256076812744,
+      "latency_metrics": {
+        "ttft": 0.39316415786743164,
+        "itps": 1779.6659989908412,
+        "otps": 27.396467046887413,
+        "oet": 2.5550739765167236,
+        "total_time": 2.680204391479492,
+        "input_tokens": 222,
+        "output_tokens": 70,
+        "cpu_percent": 88.21833333333332,
+        "ram_gb": 3.377910614013672,
+        "gpu_util": 91,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.39316415786743164,
+          "itps": 1779.6659989908412,
+          "otps": 27.396467046887413,
+          "oet": 2.5550739765167236,
+          "total_time": 2.680204391479492,
+          "input_tokens": 222,
+          "output_tokens": 70
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.40236686390532544,
+        "bleu_4": 0.15332153210964405,
+        "meteor": 0.15151515151515152,
+        "rouge_l": 0.07692307692307691,
+        "cider": 0.9653077295167245
+      }
+    },
+    {
+      "file_id": "sample_00000203",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000203.wav",
+      "reference_text": "In the audio, the character's tone is low, and the background music exudes a sense of sadness. Her gaze seems slightly unfocused, as if she is reminiscing or contemplating something. Audio, the character's tone is low, and the background music exudes a sense of sadness. This sentence is possibly the female character's description of her father's aunt and grandmother. Audio clue of the character's low tone and the sad atmosphere of the background music, we can infer that this sentence may carry a sense of sadness or nostalgia.",
+      "generated_text": "Human:",
+      "generation_time": 1.0328760147094727,
+      "latency_metrics": {
+        "ttft": 0.4067656993865967,
+        "itps": 2018.9034675875873,
+        "otps": 5.512478800706135,
+        "oet": 0.9070329666137695,
+        "total_time": 1.0321834087371826,
+        "input_tokens": 252,
+        "output_tokens": 5,
+        "cpu_percent": 55.105000000000004,
+        "ram_gb": 3.3779296875,
+        "gpu_util": 98,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.4067656993865967,
+          "itps": 2018.9034675875873,
+          "otps": 5.512478800706135,
+          "oet": 0.9070329666137695,
+          "total_time": 1.0321834087371826,
+          "input_tokens": 252,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 8.318625775474373e-39,
+        "bleu_4": 1.2887159636697603e-39,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.3460188913245435
+      }
+    },
+    {
+      "file_id": "sample_00000208",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000208.wav",
+      "reference_text": "In the audio, it is impossible to determine the character's emotional state. She may be interacting with someone, enjoying a pleasant conversation, or anticipating a positive event. In the audio, it is impossible to determine the character's emotional state.",
+      "generated_text": "Human:",
+      "generation_time": 0.9326374530792236,
+      "latency_metrics": {
+        "ttft": 0.3068504333496094,
+        "itps": 1066.4103092507594,
+        "otps": 6.195038892689734,
+        "oet": 0.8070974349975586,
+        "total_time": 0.9320499897003174,
+        "input_tokens": 133,
+        "output_tokens": 5,
+        "cpu_percent": 55.08,
+        "ram_gb": 3.3778152465820312,
+        "gpu_util": 95,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.3068504333496094,
+          "itps": 1066.4103092507594,
+          "otps": 6.195038892689734,
+          "oet": 0.8070974349975586,
+          "total_time": 0.9320499897003174,
+          "input_tokens": 133,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 4.791268553577967e-19,
+        "bleu_4": 7.422601326085906e-20,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.3044295411712823
+      }
+    },
+    {
+      "file_id": "sample_00000209",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000209.wav",
+      "reference_text": "In the audio, it is impossible to determine the character's emotional state. In the audio, it is impossible to determine the character's emotional state. Audio clues cannot determine the character's emotional state, we primarily rely on the video clues and subtitle content for inference.",
+      "generated_text": "Human:",
+      "generation_time": 0.8925676345825195,
+      "latency_metrics": {
+        "ttft": 0.26760125160217285,
+        "itps": 1001.2391876022716,
+        "otps": 6.5117255349816086,
+        "oet": 0.767845630645752,
+        "total_time": 0.8919358253479004,
+        "input_tokens": 124,
+        "output_tokens": 5,
+        "cpu_percent": 56.81666666666667,
+        "ram_gb": 3.377918243408203,
+        "gpu_util": 59,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.26760125160217285,
+          "itps": 1001.2391876022716,
+          "otps": 6.5117255349816086,
+          "oet": 0.767845630645752,
+          "total_time": 0.8919358253479004,
+          "input_tokens": 124,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 3.2283313572393226e-21,
+        "bleu_4": 5.001309433050834e-22,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.2940565552064445
+      }
+    },
+    {
+      "file_id": "sample_00000213",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000213.wav",
+      "reference_text": "In the audio, this character speaks with a strong tone, high volume, and fast pace. She is looking directly at the other person, with her mouth slightly open, seemingly speaking or discussing a certain topic seriously. The extent to which her mouth is open increases, possibly indicating that she is speaking loudly or arguing. In the audio, this character speaks with a strong tone, high volume, and fast pace. There are also continuous rhetorical questions with strong emotions. Are you ready to be a father? Luo Yiyang.\" This sentence is likely spoken by the female character during the intense conversation or argument. Audio of the character's strong tone, high volume, and fast pace, we can infer that this sentence carries a sense of anger, dissatisfaction, or provocation. The female character may be questioning the other person's usefulness and readiness to be a father, expressing her discontent and anger.",
+      "generated_text": "The audio contains a female voice speaking in Chinese. The tone of the voice is somewhat harsh and the speech is quite rapid. The content of the speech seems to be questioning the usefulness of asking a question and whether someone is ready to be a father. Based on the tone and content, it can be inferred that the speaker is likely feeling frustrated or annoyed. The rapid speech and the questioning nature of the content suggest a sense of impatience or dissatisfaction. Therefore it can predict that the emotional states of the speaker are likely to be frustration and annoyance.",
+      "generation_time": 3.611071825027466,
+      "latency_metrics": {
+        "ttft": 0.3143460750579834,
+        "itps": 1276.1622877350367,
+        "otps": 31.55940911693961,
+        "oet": 3.485489845275879,
+        "total_time": 3.6103198528289795,
+        "input_tokens": 159,
+        "output_tokens": 110,
+        "cpu_percent": 91.08764705882355,
+        "ram_gb": 3.37823486328125,
+        "gpu_util": 96,
+        "gpu_memory_gb": 42.208251953125,
+        "streaming_metrics": {
+          "ttft": 0.3143460750579834,
+          "itps": 1276.1622877350367,
+          "otps": 31.55940911693961,
+          "oet": 3.485489845275879,
+          "total_time": 3.6103198528289795,
+          "input_tokens": 159,
+          "output_tokens": 110
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.5590523745121966,
+        "bleu_4": 0.37725216418750224,
+        "meteor": 0.20556924693595802,
+        "rouge_l": 0.25498007968127495,
+        "cider": 0.9841876187316599
+      }
+    }
+  ]
+}

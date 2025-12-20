@@ -1,0 +1,104 @@
+{
+  "experiment_info": {
+    "experiment_type": "cloud_optimized_baseline",
+    "model_path": "Qwen/Qwen2.5-Omni-7B",
+    "device": "cuda",
+    "generation_parameters": {
+      "max_new_tokens": 128,
+      "target_sentences": 2,
+      "min_chars": 90,
+      "min_new_tokens_sc": 48,
+      "prompt_type": "detailed"
+    },
+    "timestamp": "2025-10-18 22:47:53"
+  },
+  "aggregate_metrics": {
+    "average_bleu_1": 0.03594766607935893,
+    "average_bleu_4": 0.024567971190687383,
+    "average_meteor": 0.0563193793840165,
+    "average_rouge_l": 0.08241758241758242,
+    "average_cider": 0.6617718248083913,
+    "average_ttft": 1.5617209672927856,
+    "average_otps": 8.535818907949011,
+    "average_total_time": 2.8316707611083984,
+    "average_output_tokens": 27.5,
+    "total_samples": 2,
+    "processed_samples": 2,
+    "failed_samples": 0,
+    "success_rate": 1.0
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000000.wav",
+      "reference_text": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The audio contains a male voice speaking in Chinese. The tone of the voice is somewhat hesitant and uncertain. The speaker seems to be expressing a lack of knowledge or experience in a particular area, as indicated by the phrase \"我哪知道啊\" which",
+      "generation_time": 4.6349852085113525,
+      "latency_metrics": {
+        "ttft": 2.7346725463867188,
+        "itps": 687.9435630473549,
+        "otps": 11.447563696134575,
+        "oet": 4.367741584777832,
+        "total_time": 4.62978982925415,
+        "input_tokens": 180,
+        "output_tokens": 50,
+        "cpu_percent": 43.66684210526316,
+        "ram_gb": 4.211732964766653,
+        "gpu_util": 90,
+        "gpu_memory_gb": 41.579345703125,
+        "streaming_metrics": {
+          "ttft": 2.7346725463867188,
+          "itps": 687.9435630473549,
+          "otps": 11.447563696134575,
+          "oet": 4.367741584777832,
+          "total_time": 4.62978982925415,
+          "input_tokens": 180,
+          "output_tokens": 50
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 0.07189533215871786,
+        "bleu_4": 0.04913594238137477,
+        "meteor": 0.112638758768033,
+        "rouge_l": 0.16483516483516483,
+        "cider": 0.9807977082185804
+      }
+    },
+    {
+      "file_id": "sample_00000007",
+      "audio_path": "/data/gpfs/projects/punim2341/jiajunlu/edgecloud-sec/data/processed/mer2024/audio_16k_mono/sample_00000007.wav",
+      "reference_text": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "Human:",
+      "generation_time": 1.0283563137054443,
+      "latency_metrics": {
+        "ttft": 0.38876938819885254,
+        "itps": 1525.20408307468,
+        "otps": 5.6240741197634465,
+        "oet": 0.8890352249145508,
+        "total_time": 1.027712106704712,
+        "input_tokens": 211,
+        "output_tokens": 5,
+        "cpu_percent": 66.63333333333334,
+        "ram_gb": 4.3954620361328125,
+        "gpu_util": 91,
+        "gpu_memory_gb": 41.704345703125,
+        "streaming_metrics": {
+          "ttft": 0.38876938819885254,
+          "itps": 1525.20408307468,
+          "otps": 5.6240741197634465,
+          "oet": 0.8890352249145508,
+          "total_time": 1.027712106704712,
+          "input_tokens": 211,
+          "output_tokens": 5
+        }
+      },
+      "evaluation_metrics": {
+        "bleu_1": 2.0990608519257687e-35,
+        "bleu_4": 2.7344699235728516e-36,
+        "meteor": 0.0,
+        "rouge_l": 0.0,
+        "cider": 0.34274594139820214
+      }
+    }
+  ]
+}

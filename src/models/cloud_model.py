@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 class CloudModel:
     """Cloud model for verification and refinement"""
     
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-7B", device: str = "cuda", name: str = None, dtype: str = "float16"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-7B", device: str = "cuda", name: str = None, dtype: str = "float32", rank_threshold: int = 20):
         if name is not None:
             self.model_name = name
         else:
             self.model_name = model_name
         self.device = device
         self.dtype = dtype
+        self.rank_threshold = rank_threshold  # Accept top-N ranked tokens during verification
         self.model = None
         self.processor = None
         self.kv_cache = {}
@@ -438,9 +439,10 @@ class CloudModel:
         # 4) 逐位排名阈值验收 + 首错纠正
         accepted = 0
         probabilities = []
+        all_ranks = []  # Store ranks for all tokens
         
-        # 纯使用排名阈值，不使用概率阈值
-        rank_threshold = 20 # 接受排名前3的token (更严格的验证)
+        # 使用配置的排名阈值，不使用概率阈值
+        rank_threshold = self.rank_threshold
         
         for i in range(k):
             pos = m - 1 + i            # 对应 yi 的预测位置
@@ -457,8 +459,10 @@ class CloudModel:
             # 计算当前token的排名
             sorted_probs, sorted_indices = torch.sort(probs, descending=True)
             rank = (sorted_indices == draft_tokens[i]).nonzero(as_tuple=True)[0].item() + 1
+            all_ranks.append(rank)  # Store rank for logging
             
-            logger.debug(f"Position {i}: draft_token={draft_tokens[i]}, probability={p_i:.3e}, rank={rank}, rank_threshold={rank_threshold}")
+            # Print ranking info for debugging cloud verification
+            logger.info(f"[Cloud Verify] Token {i}/{k}: draft_token={draft_tokens[i]}, probability={p_i:.6f}, rank={rank}/{rank_threshold}")
             
             # Additional debugging for extremely low probabilities
             if p_i < 1e-6:
@@ -470,19 +474,21 @@ class CloudModel:
             # 纯使用排名阈值策略
             if rank <= rank_threshold:
                 accepted += 1
-                logger.debug(f"  -> ACCEPTED (rank={rank} <= {rank_threshold})")
+                logger.info(f"  -> ACCEPTED (rank {rank} <= {rank_threshold})")
             else:
+                logger.info(f"  -> REJECTED (rank {rank} > {rank_threshold})")
                 # 首错纠正：使用贪心选择（top-1）而非随机采样
                 corr = torch.argmax(probs).item()
                 logger.info(f"Cloud correction: accepted {accepted}/{k} tokens, first error at position {i}")
                 logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
-                logger.info(f"  -> Ranks: {[f'{rank}' for rank in [(sorted_indices == draft_tokens[j]).nonzero(as_tuple=True)[0].item() + 1 for j in range(len(probabilities))]]}")
+                logger.info(f"  -> Ranks: {all_ranks}")
                 logger.info(f"  -> Correction token: {corr} (replacing draft token {draft_tokens[i]})")
                 return draft_tokens[:accepted], corr, True
 
         # 全部通过
         logger.info(f"Cloud correction: accepted {accepted}/{k} tokens (all passed)")
         logger.info(f"  -> Probabilities: {[f'{p:.4f}' for p in probabilities]}")
+        logger.info(f"  -> Ranks: {all_ranks}")
         return draft_tokens, None, False
 
     
@@ -668,3 +674,138 @@ class CloudModel:
             'gpu_memory_gb': gpu_memory_gb,  # GPU memory usage in GB
             'streaming_metrics': streaming_metrics  # Additional streaming data
         }
+
+    def generate_with_spec_logic(self, 
+                                 audio_features: torch.Tensor,
+                                 prompt: str = "Based on this audio, describe the emotional state of the speaker in Chinese.",
+                                 max_new_tokens: int = 128,
+                                 target_sentences: int = 2,
+                                 min_chars: int = 90,
+                                 min_new_tokens_sc: int = 48,
+                                 prompt_type: str = "detailed",
+                                 rank_threshold: int = 20) -> tuple[str, dict]:
+        """
+        Generate using the SAME logic as Speculative Decoding's edge generation.
+        This ensures Cloud Optimized Baseline uses exactly the same generation logic
+        as Edge Baseline, enabling fair comparison.
+        
+        This method creates a SimpleSpeculativeDecoding instance with entropy_threshold=999.0,
+        which forces Edge-only mode (Cloud verification is never called). This way, Cloud Optimized Baseline uses
+        exactly the same generation logic (CJK-aware constraints, punctuation gates, etc.)
+        as the Edge Baseline, but powered by the 7B Cloud model.
+        
+        Args:
+            audio_features: Audio waveform tensor (1D)
+            prompt: Text prompt for generation
+            max_new_tokens: Maximum number of tokens to generate
+            target_sentences: Target number of sentences for stopping criteria
+            min_chars: Minimum characters for stopping criteria
+            min_new_tokens_sc: Minimum new tokens before stopping
+            prompt_type: Type of prompt ("default", "detailed", "concise")
+            rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
+            
+        Returns:
+            Tuple of (generated_text, latency_metrics)
+        """
+        try:
+            import time
+            logger.info("=" * 80)
+            logger.info("Using Speculative Decoding logic for Cloud Optimized Baseline generation")
+            logger.info(f"This ensures 100% alignment with Speculative Decoding's generation logic")
+            logger.info("=" * 80)
+            
+            total_start_time = time.time()
+            
+            # Import speculative decoding logic
+            try:
+                from ..speculative_decoding import SimpleSpeculativeDecoding
+            except ImportError:
+                # Fallback for direct execution
+                import sys
+                import os
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+                from speculative_decoding import SimpleSpeculativeDecoding
+            
+            # Create spec decoder with VERY HIGH entropy threshold
+            # This forces Edge-only mode: Cloud verification is never called
+            # We use this cloud model as the "edge model" to get the same generation logic
+            logger.info(f"Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)")
+            logger.info(f"Using 7B Cloud model as the 'edge model' for fair comparison")
+
+            # Determine language from prompt type
+            # If prompt contains Chinese characters, use Chinese; otherwise use English
+            import re
+            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', prompt))
+            language = "chinese" if has_chinese else "english"
+            logger.info(f"Detected language from prompt: {language}")
+
+            # Create spec decoder with VERY HIGH entropy threshold
+            # This forces Edge-only mode: Cloud verification is never called
+            # We use this cloud model as the "edge model" to get the same generation logic
+            # NOTE: We need to pass language and prompt_type to match the expected behavior
+            spec_decoder = SimpleSpeculativeDecoding(
+                edge_model=self,  # Use this cloud model as the "edge model"
+                cloud_model=None,  # No cloud verification needed
+                k=5,  # Draft block size (same as in actual spec decoding)
+                entropy_threshold=999.0,  # CRITICAL: Never call cloud verification (Edge only)
+                target_sentences=target_sentences,
+                min_chars=min_chars,
+                min_new_tokens_sc=min_new_tokens_sc,
+                language=language,  # Pass detected language
+                prompt_type=prompt_type,
+                rank_threshold=rank_threshold
+            )
+            
+            logger.info(f"Generating with Cloud model (7B) using Edge Baseline logic:")
+            logger.info(f"  - max_new_tokens={max_new_tokens}")
+            logger.info(f"  - target_sentences={target_sentences}")
+            logger.info(f"  - min_chars={min_chars}")
+            logger.info(f"  - min_new_tokens_sc={min_new_tokens_sc}")
+            logger.info(f"  - prompt_type={prompt_type}")
+            
+            # Use spec decoder's generation logic (same as Edge Baseline)
+            # The high entropy_threshold ensures no cloud verification
+            generated_text, spec_metrics = spec_decoder.generate(
+                audio_features=audio_features,
+                prompt=prompt,
+                max_new_tokens=max_new_tokens
+            )
+            
+            total_time = time.time() - total_start_time
+            
+            logger.info(f"Cloud Optimized Baseline generation completed in {total_time:.3f}s")
+            logger.info(f"Generated text: {generated_text}")
+            logger.info(f"Total cloud calls: {spec_metrics.get('total_cloud_calls', 0)} (should be 0)")
+            
+            # Extract relevant metrics from spec_metrics
+            # Format to match the expected latency_metrics structure
+            latency_metrics = {
+                'ttft': spec_metrics.get('ttft', 0.0),
+                'itps': spec_metrics.get('itps', 0.0),
+                'otps': spec_metrics.get('otps', 0.0),
+                'oet': spec_metrics.get('oet', 0.0),
+                'total_time': spec_metrics.get('total_time', total_time),
+                'input_tokens': spec_metrics.get('input_tokens', 0),
+                'output_tokens': spec_metrics.get('output_tokens', 0),
+                'cpu_percent': spec_metrics.get('cpu_percent', 0.0),
+                'ram_gb': spec_metrics.get('ram_gb', 0.0),
+                'gpu_util': spec_metrics.get('gpu_util', 0.0),
+                'gpu_memory_gb': spec_metrics.get('gpu_memory_gb', 0.0),
+                'streaming_metrics': {
+                    'ttft': spec_metrics.get('ttft', 0.0),
+                    'itps': spec_metrics.get('itps', 0.0),
+                    'otps': spec_metrics.get('otps', 0.0),
+                    'oet': spec_metrics.get('oet', 0.0),
+                    'total_time': spec_metrics.get('total_time', total_time),
+                    'input_tokens': spec_metrics.get('input_tokens', 0),
+                    'output_tokens': spec_metrics.get('output_tokens', 0),
+                }
+            }
+            
+            return generated_text, latency_metrics
+            
+        except Exception as e:
+            logger.error(f"Error in generate_with_spec_logic: {e}")
+            import traceback
+            traceback.print_exc()
+            raise

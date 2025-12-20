@@ -347,8 +347,21 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 - 只输出“两到三句中文长句”，约70–100个字；
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
+#         elif language == "english":
+#             return """You are an expert in emotional analysis. Please analyze the audio content and provide a detailed English description of the speaker's emotional state.
+
+# IMPORTANT REQUIREMENTS:
+# - Output ONLY in English language
+# - Provide 2-3 detailed sentences (60-100 words)
+# - Focus on acoustic features: tone, pace, volume, pitch variations
+# - Describe the emotional state based on these acoustic cues
+# - Use third person perspective (e.g., "The speaker", "The individual")
+# - Do not use Chinese characters or any non-English text
+
+# Example format: "The speaker's voice exhibits [acoustic features], indicating [emotional state]. The tone suggests [additional analysis]. Based on these acoustic cues, the individual appears to be experiencing [emotion]." """
         elif language == "english":
-            return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
+                    # return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"
@@ -367,12 +380,15 @@ def run_cpu_limited_speculative_decoding_experiment(
     caption_type: str = "original",
     language: str = "chinese",
     prompt_type: str = "default",
+    input_modality: str = "audio_only",
+    edge_device: str = "cpu",
     entropy_threshold: float = 3.0,
     k: int = 5,
     max_cpu_cores: int = 2,
-    max_memory_gb: float = 6.0):
+    max_memory_gb: float = 6.0,
+    rank_threshold: int = 20):
     """
-    Run CPU-limited edge + GPU cloud speculative decoding experiment
+    Run edge + GPU cloud speculative decoding experiment with device selection
     
     Args:
         config_path: Path to configuration file
@@ -384,10 +400,12 @@ def run_cpu_limited_speculative_decoding_experiment(
         caption_type: Type of caption to use ("original", "audio_only")
         language: Language for generation ("chinese", "english")
         prompt_type: Type of prompt to use ("default", "detailed", "concise")
+        edge_device: Device for edge model ("cpu" for CPU-limited, "cuda" for GPU)
         entropy_threshold: Entropy threshold for cloud verification
         k: Number of draft tokens to generate
         max_cpu_cores: Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)
         max_memory_gb: Maximum memory for edge model (iPhone 15 Plus: 8GB total, reserve 2GB)
+        rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
     """
     
     # Load configuration
@@ -402,38 +420,51 @@ def run_cpu_limited_speculative_decoding_experiment(
     if max_samples:
         data = data[:max_samples]
     
-    logger.info(f"Processing {len(data)} samples with CPU-limited edge + GPU cloud speculative decoding")
+    logger.info(f"Processing {len(data)} samples with edge + GPU cloud speculative decoding")
     logger.info(f"Caption type: {caption_type}")
     logger.info(f"Language: {language}")
     logger.info(f"Prompt type: {prompt_type}")
+    logger.info(f"Edge device: {edge_device}")
     logger.info(f"Entropy threshold: {entropy_threshold}")
     logger.info(f"K (draft tokens): {k}")
-    logger.info(f"Edge hardware limits: {max_cpu_cores} cores, {max_memory_gb}GB memory")
-    logger.info(f"Cloud device: GPU (G100)")
-    
-    # Initialize hardware limiter for edge
-    hardware_limiter = HardwareLimiter(
-        max_cpu_cores=max_cpu_cores,
-        max_memory_gb=max_memory_gb
-    )
-    
-    # Initialize models and processors
-    device = torch.device("cpu")  # Edge uses CPU
-    logger.info(f"Edge device: {device}")
+    logger.info(f"Rank threshold: {rank_threshold}")
+    if edge_device == "cpu":
+        logger.info(f"Edge hardware limits: {max_cpu_cores} cores, {max_memory_gb}GB memory")
     logger.info(f"Cloud device: cuda")
     
     audio_processor = AudioProcessor(**config['audio'])
     
-    # Initialize CPU-limited edge model
-    edge_model = LimitedEdgeModel(
-        model_name=config['models']['edge']['name'],  # Use 'name' from config
-        device="cpu",
-        dtype="float32",  # Use float32 for CPU
-        hardware_limiter=hardware_limiter
-    )
+    # Initialize edge model based on device selection
+    if edge_device == "cpu":
+        # Initialize hardware limiter for CPU
+        hardware_limiter = HardwareLimiter(
+            max_cpu_cores=max_cpu_cores,
+            max_memory_gb=max_memory_gb
+        )
+        
+        # Initialize CPU-limited edge model
+        edge_model = LimitedEdgeModel(
+            model_name=config['models']['edge']['name'],
+            device="cpu",
+            dtype="float32",  # Use float32 for CPU
+            hardware_limiter=hardware_limiter
+        )
+        logger.info(f"Using CPU-limited edge model")
+    elif edge_device == "cuda":
+        # Use regular edge model for GPU
+        edge_model = EdgeModel(
+            model_name=config['models']['edge']['name'],
+            device="cuda",
+            dtype="float16"  # Use float16 for GPU
+        )
+        logger.info(f"Using GPU edge model")
+    else:
+        raise ValueError(f"Unsupported edge_device: {edge_device}. Must be 'cpu' or 'cuda'")
     
     # Initialize GPU cloud model
-    cloud_model = CloudModel(**config['models']['cloud'])
+    cloud_config = config['models']['cloud'].copy()
+    cloud_config['rank_threshold'] = rank_threshold
+    cloud_model = CloudModel(**cloud_config)
     
     # Initialize speculative decoding with multi-sentence configuration
     spec_decoding = SimpleSpeculativeDecoding(
@@ -443,7 +474,8 @@ def run_cpu_limited_speculative_decoding_experiment(
         k=k,
         target_sentences=2,      # Target 2-3 sentences for detailed description
         min_chars=90,            # Minimum 90 characters for 2-3 sentences
-        min_new_tokens_sc=48     # Minimum 48 tokens before allowing stop
+        min_new_tokens_sc=48,    # Minimum 48 tokens before allowing stop
+        rank_threshold=rank_threshold
     )
     
     metrics = EvaluationMetrics()
@@ -480,9 +512,16 @@ def run_cpu_limited_speculative_decoding_experiment(
                 max_new_tokens=128  # Increased for 2-3 sentence multi-sentence output
             )
             
+            # Clean generated text: remove newlines, tabs, and strip
+            # This is critical for pycocoevalcap METEOR which writes to temp files
+            generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
+            
             # Calculate traditional metrics
-            bleu_score = metrics.compute_bleu([reference_caption], generated_text)
-            cider_score = metrics.compute_cider([reference_caption], generated_text)
+            bleu_1_score = metrics.compute_bleu_1([reference_caption], generated_text, language=language)
+            bleu_4_score = metrics.compute_bleu_4([reference_caption], generated_text, language=language)
+            meteor_score = metrics.compute_meteor([reference_caption], generated_text, language=language)
+            rouge_l_score = metrics.compute_rouge_l([reference_caption], generated_text)
+            cider_score = metrics.compute_cider([reference_caption], generated_text, language=language)
             
             # Extract speculative decoding specific metrics from latency_metrics
             spec_metrics = {
@@ -503,7 +542,10 @@ def run_cpu_limited_speculative_decoding_experiment(
                 "dataset": sample['dataset'],
                 "reference_caption": reference_caption,
                 "generated_text": generated_text,
-                "bleu_score": bleu_score,
+                "bleu_1_score": bleu_1_score,
+                "bleu_4_score": bleu_4_score,
+                "meteor_score": meteor_score,
+                "rouge_l_score": rouge_l_score,
                 "cider_score": cider_score,
                 "caption_type": caption_type,
                 "language": language,
@@ -515,12 +557,12 @@ def run_cpu_limited_speculative_decoding_experiment(
                     "k": k
                 },
                 "hardware_config": {
-                    "edge_device": "cpu",
+                    "edge_device": edge_device,
                     "cloud_device": "cuda",
-                    "max_cpu_cores": max_cpu_cores,
-                    "max_memory_gb": max_memory_gb,
-                    "edge_model_dtype": "float32",
-                    "cloud_model_dtype": "float16"
+                    "max_cpu_cores": max_cpu_cores if edge_device == "cpu" else None,
+                    "max_memory_gb": max_memory_gb if edge_device == "cpu" else None,
+                    "edge_model_dtype": "float32" if edge_device == "cpu" else "float16",
+                    "cloud_model_dtype": "float32"
                 }
             }
             results.append(result)
@@ -529,7 +571,10 @@ def run_cpu_limited_speculative_decoding_experiment(
                 logger.info(f"Sample {i+1}:")
                 logger.info(f"  Reference: {reference_caption}")
                 logger.info(f"  Generated: {generated_text}")
-                logger.info(f"  BLEU: {bleu_score:.4f}")
+                logger.info(f"  BLEU-1: {bleu_1_score:.4f}")
+                logger.info(f"  BLEU-4: {bleu_4_score:.4f}")
+                logger.info(f"  METEOR: {meteor_score:.4f}")
+                logger.info(f"  ROUGE-L: {rouge_l_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
                 logger.info(f"  BERTScore: Computing in batch...")
                 logger.info(f"  Cloud calls: {spec_metrics['cloud_calls']}")
@@ -569,17 +614,32 @@ def run_cpu_limited_speculative_decoding_experiment(
         # Calculate corpus-level BLEU with language-specific tokenization
         import sacrebleu
         hyps = [r['generated_text'] for r in results]
+        refs_list = [r['reference_caption'] for r in results]
         refs = [[r['reference_caption'] for r in results]]
         
         # Select tokenization based on language
         # Chinese: 'zh' - character-level tokenization
         # English: '13a' - standard English tokenization (handles punctuation, case, etc.)
         bleu_tokenize = 'zh' if language == 'chinese' else '13a'
-        corpus_bleu = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
-        overall_bleu = corpus_bleu.score / 100.0  # Convert to [0,1] range
+        corpus_bleu_result = sacrebleu.corpus_bleu(hyps, refs, tokenize=bleu_tokenize)
+        
+        # Extract BLEU-4 (the default score)
+        overall_bleu_4 = corpus_bleu_result.score / 100.0  # Convert to [0,1] range
+        
+        # Extract BLEU-1 from precisions (precisions[0] is BLEU-1)
+        # precisions is a list of [BLEU-1, BLEU-2, BLEU-3, BLEU-4] as percentages
+        overall_bleu_1 = corpus_bleu_result.precisions[0] / 100.0  # Convert to [0,1] range
+        
+        # Corpus-level METEOR, ROUGE-L, CIDEr
+        corpus_meteor = metrics.compute_corpus_meteor(hyps, refs_list, language=language)
+        corpus_rouge_l = metrics.compute_corpus_rouge_l(hyps, refs_list)
+        corpus_cider = metrics.compute_corpus_cider(hyps, refs_list, language=language)
         
         # Keep sentence-level averages for diagnostic purposes
-        avg_bleu_sentence = sum(r['bleu_score'] for r in results) / len(results)
+        avg_bleu_1_sentence = sum(r['bleu_1_score'] for r in results) / len(results)
+        avg_bleu_4_sentence = sum(r['bleu_4_score'] for r in results) / len(results)
+        avg_meteor_sentence = sum(r['meteor_score'] for r in results) / len(results)
+        avg_rouge_l_sentence = sum(r['rouge_l_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
         avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
         avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
@@ -614,22 +674,34 @@ def run_cpu_limited_speculative_decoding_experiment(
                     "k": k
                 },
                 "hardware_config": {
-                    "edge_device": "cpu",
+                    "edge_device": edge_device,
                     "cloud_device": "cuda",
-                    "max_cpu_cores": max_cpu_cores,
-                    "max_memory_gb": max_memory_gb,
-                    "edge_model_dtype": "float32",
-                    "cloud_model_dtype": "float16"
+                    "max_cpu_cores": max_cpu_cores if edge_device == "cpu" else None,
+                    "max_memory_gb": max_memory_gb if edge_device == "cpu" else None,
+                    "edge_model_dtype": "float32" if edge_device == "cpu" else "float16",
+                    "cloud_model_dtype": "float32"
                 }
             },
             "metrics": {
-                f"corpus_bleu_{language[:2]}": overall_bleu,  # Language-specific BLEU (corpus-level)
-                "avg_bleu_sentence": avg_bleu_sentence,  # Sentence-level average for diagnostics
+                # Corpus-level metrics
+                f"corpus_bleu_1_{language[:2]}": overall_bleu_1,
+                f"corpus_bleu_4_{language[:2]}": overall_bleu_4,
+                "corpus_meteor": corpus_meteor,
+                "corpus_rouge_l": corpus_rouge_l,
+                "corpus_cider": corpus_cider,
+                # Sentence-level metrics (averaged)
+                "avg_bleu_1_sentence": avg_bleu_1_sentence,
+                "avg_bleu_4_sentence": avg_bleu_4_sentence,
+                "avg_meteor_sentence": avg_meteor_sentence,
+                "avg_rouge_l_sentence": avg_rouge_l_sentence,
                 "avg_cider": avg_cider,
+                # BERTScore
                 "avg_bertscore_precision": avg_bertscore_precision,
                 "avg_bertscore_recall": avg_bertscore_recall,
                 "avg_bertscore_f1": avg_bertscore_f1,
+                # Latency metrics
                 "latency_metrics": latency_metrics,
+                # Speculative decoding metrics
                 "speculative_decoding_metrics": {
                     "total_time_mean": latency_metrics.get('total_time_mean', 0),
                     "avg_cloud_calls": avg_cloud_calls,
@@ -651,9 +723,31 @@ def run_cpu_limited_speculative_decoding_experiment(
         
         logger.info(f"Results saved to: {output_file}")
         lang_display = "Chinese" if language == 'chinese' else "English"
-        logger.info(f"Corpus BLEU ({lang_display} tokenization): {overall_bleu:.4f}")
-        logger.info(f"Average BLEU (sentence-level): {avg_bleu_sentence:.4f}")
+        
+        # Log corpus-level metrics
+        logger.info("=" * 80)
+        logger.info("CORPUS-LEVEL METRICS:")
+        logger.info("=" * 80)
+        logger.info(f"Corpus BLEU-1 ({lang_display} tokenization): {overall_bleu_1:.4f}")
+        logger.info(f"Corpus BLEU-4 ({lang_display} tokenization): {overall_bleu_4:.4f}")
+        logger.info(f"Corpus METEOR: {corpus_meteor:.4f}")
+        logger.info(f"Corpus ROUGE-L: {corpus_rouge_l:.4f}")
+        logger.info(f"Corpus CIDEr: {corpus_cider:.4f}")
+        
+        # Log sentence-level metrics
+        logger.info("=" * 80)
+        logger.info("SENTENCE-LEVEL METRICS (AVERAGE):")
+        logger.info("=" * 80)
+        logger.info(f"Average BLEU-1: {avg_bleu_1_sentence:.4f}")
+        logger.info(f"Average BLEU-4: {avg_bleu_4_sentence:.4f}")
+        logger.info(f"Average METEOR: {avg_meteor_sentence:.4f}")
+        logger.info(f"Average ROUGE-L: {avg_rouge_l_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
+        
+        # Log BERTScore
+        logger.info("=" * 80)
+        logger.info("BERTScore:")
+        logger.info("=" * 80)
         logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
         logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")
         logger.info(f"Average BERTScore F1: {avg_bertscore_f1:.4f}")
@@ -688,10 +782,13 @@ def run_cpu_limited_speculative_decoding_experiment(
             
             # Hardware limits info
             logger.info("Hardware Configuration:")
-            logger.info(f"  Edge Device: CPU (limited)")
+            logger.info(f"  Edge Device: {edge_device.upper()}")
             logger.info(f"  Cloud Device: CUDA")
-            logger.info(f"  Max CPU Cores: {max_cpu_cores}")
-            logger.info(f"  Max Memory: {max_memory_gb:.1f}GB")
+            if edge_device == "cpu":
+                logger.info(f"  Max CPU Cores: {max_cpu_cores}")
+                logger.info(f"  Max Memory: {max_memory_gb:.1f}GB")
+            else:
+                logger.info(f"  Edge GPU (no resource limits)")
         
         return overall_results
     else:
@@ -712,14 +809,20 @@ def main():
                        help="Language for generation")
     parser.add_argument("--prompt_type", default="default", choices=["default", "detailed", "concise"], 
                        help="Type of prompt to use")
-    parser.add_argument("--entropy_threshold", type=float, default=3.0, 
-                       help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.0)")
+    parser.add_argument("--input_modality", default="audio_only", choices=["audio_only", "audio_text"],
+                       help="Input modality: 'audio_only' (audio only) or 'audio_text' (audio + transcription)")
+    parser.add_argument("--edge_device", default="cpu", choices=["cpu", "cuda"],
+                       help="Device for edge model ('cpu' for CPU-limited, 'cuda' for GPU)")
+    parser.add_argument("--entropy_threshold", type=float, default=3.5, 
+                       help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.5 for better repetition control)")
     parser.add_argument("--k", type=int, default=5, 
                        help="Number of draft tokens to generate (Recommended: 4 for fluency, 6 for quality)")
     parser.add_argument("--max_cpu_cores", type=int, default=2, 
                        help="Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)")
     parser.add_argument("--max_memory_gb", type=float, default=16.0, 
                        help="Maximum memory for edge model (default: 16.0, increased for Qwen2.5-Omni-3B model)")
+    parser.add_argument("--rank_threshold", type=int, default=20, 
+                       help="Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)")
     
     args = parser.parse_args()
     
@@ -733,10 +836,13 @@ def main():
         caption_type=args.caption_type,
         language=args.language,
         prompt_type=args.prompt_type,
+        input_modality=args.input_modality,
+        edge_device=args.edge_device,
         entropy_threshold=args.entropy_threshold,
         k=args.k,
         max_cpu_cores=args.max_cpu_cores,
-        max_memory_gb=args.max_memory_gb
+        max_memory_gb=args.max_memory_gb,
+        rank_threshold=args.rank_threshold
     )
 
 if __name__ == "__main__":

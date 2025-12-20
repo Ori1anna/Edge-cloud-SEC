@@ -1,0 +1,153 @@
+{
+  "experiment_config": {
+    "dataset_type": "unified",
+    "dataset_path": "data/processed/mer2024/manifest_audio_text_augmented_v5.json",
+    "caption_type": "audio_only",
+    "language": "english",
+    "prompt_type": "detailed",
+    "max_samples": 2,
+    "total_samples": 2,
+    "hardware_config": {
+      "device": "cpu",
+      "max_cpu_cores": 2,
+      "max_memory_gb": 16.0,
+      "model_dtype": "float32"
+    }
+  },
+  "metrics": {
+    "corpus_bleu_en": 0.004488547849559928,
+    "avg_bleu_1_sentence": 0.06071725495668104,
+    "avg_bleu_4_sentence": 0.035991566443836435,
+    "avg_meteor_sentence": 0.09322742674344686,
+    "avg_rouge_l_sentence": 0.1412776412776413,
+    "avg_cider": 0.9561535821112769,
+    "avg_bertscore_precision": 0.8641975820064545,
+    "avg_bertscore_recall": 0.8427485525608063,
+    "avg_bertscore_f1": 0.853223979473114,
+    "latency_metrics": {
+      "ttft_mean": 7.30931830406189,
+      "ttft_min": 6.6580188274383545,
+      "ttft_max": 7.960617780685425,
+      "itps_mean": 2108.576959396434,
+      "itps_min": 1668.585169206832,
+      "itps_max": 2548.5687495860366,
+      "otps_mean": 1.8501800598445075,
+      "otps_min": 1.6612645156527186,
+      "otps_max": 2.039095604036296,
+      "oet_mean": 21.28960382938385,
+      "oet_min": 18.05853295326233,
+      "oet_max": 24.52067470550537,
+      "total_time_mean": 21.385531902313232,
+      "total_time_min": 18.14154553413391,
+      "total_time_max": 24.629518270492554,
+      "cpu_percent_mean": 199.4665755919856,
+      "cpu_percent_min": 199.344262295082,
+      "cpu_percent_max": 199.58888888888916,
+      "ram_gb_mean": 20.347407761384446,
+      "ram_gb_min": 20.168880243770413,
+      "ram_gb_max": 20.52593527899848,
+      "gpu_util_mean": 0.0,
+      "gpu_util_min": 0.0,
+      "gpu_util_max": 0.0,
+      "gpu_memory_gb_mean": 0.86175537109375,
+      "gpu_memory_gb_min": 0.86175537109375,
+      "gpu_memory_gb_max": 0.86175537109375,
+      "avg_input_tokens": 195.5,
+      "avg_output_tokens": 40.0,
+      "total_input_tokens": 391,
+      "total_output_tokens": 80
+    }
+  },
+  "detailed_results": [
+    {
+      "file_id": "sample_00000000",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. This may indicate that he is discussing a serious issue and already feeling a bit frustrated. This change suggests that the speaker has lightened the tense topic through jokes and banter. In the audio, the character's tone is initially raised, expressing dissatisfaction and impatience. Later, while laughing, the character speaks, conveying happiness with a hint of teasing. I, I, I don't have any experience in this area.\" This sentence could be the male doctor's response or explanation to a certain question. Audio, from dissatisfaction and impatience to happiness with a hint of teasing, we can infer that this sentence may have a humorous or self-deprecating tone. The male doctor lightens the tense topic through jokes and banter, displaying a relaxed and happy mood.",
+      "generated_text": "The person seems to be a bit nervous or uncertain. You can tell from the slightly shaky tone of their voice. They might be feeling a bit of anxiety or hesitation. What do you think? Do you have any other clues from the audio?",
+      "bleu_1_score": 0.055635787164496985,
+      "bleu_4_score": 0.03312494836889271,
+      "meteor_score": 0.07962840079628399,
+      "rouge_l_score": 0.11891891891891893,
+      "cider_score": 0.9424708407871056,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 6.6580188274383545,
+        "itps": 1668.585169206832,
+        "otps": 2.039095604036296,
+        "oet": 24.52067470550537,
+        "total_time": 24.629518270492554,
+        "input_tokens": 180,
+        "output_tokens": 50,
+        "cpu_percent": 199.344262295082,
+        "ram_gb": 20.168880243770413,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "streaming_metrics": {
+          "ttft": 6.6580188274383545,
+          "itps": 1668.585169206832,
+          "otps": 2.039095604036296,
+          "oet": 24.52067470550537,
+          "total_time": 24.629518270492554,
+          "input_tokens": 180,
+          "output_tokens": 50
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8737084865570068,
+      "bertscore_recall": 0.8325119018554688,
+      "bertscore_f1": 0.8526128530502319
+    },
+    {
+      "file_id": "sample_00000007",
+      "dataset": "mer2024",
+      "reference_caption": "In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. In the audio, the character's voice is loud, with a calm tone and a hint of laughter, indicating that the character is in a pleasant mood. Audio, we can infer that this sentence is a positive response from the lady to the other person, indicating her willingness to meet. Therefore, this sentence expresses the lady's happiness and anticipation.",
+      "generated_text": "The individual seems to be in a positive and excited state. The tone of voice is cheerful and enthusiastic, and the words \"不见不散\" and",
+      "bleu_1_score": 0.0657987227488651,
+      "bleu_4_score": 0.03885818451878016,
+      "meteor_score": 0.10682645269060972,
+      "rouge_l_score": 0.16363636363636366,
+      "cider_score": 0.9698363234354481,
+      "caption_type": "audio_only",
+      "language": "english",
+      "prompt_type": "detailed",
+      "latency_metrics": {
+        "ttft": 7.960617780685425,
+        "itps": 2548.5687495860366,
+        "otps": 1.6612645156527186,
+        "oet": 18.05853295326233,
+        "total_time": 18.14154553413391,
+        "input_tokens": 211,
+        "output_tokens": 30,
+        "cpu_percent": 199.58888888888916,
+        "ram_gb": 20.52593527899848,
+        "gpu_util": 0,
+        "gpu_memory_gb": 0.86175537109375,
+        "streaming_metrics": {
+          "ttft": 7.960617780685425,
+          "itps": 2548.5687495860366,
+          "otps": 1.6612645156527186,
+          "oet": 18.05853295326233,
+          "total_time": 18.14154553413391,
+          "input_tokens": 211,
+          "output_tokens": 30
+        }
+      },
+      "hardware_config": {
+        "device": "cpu",
+        "max_cpu_cores": 2,
+        "max_memory_gb": 16.0,
+        "model_dtype": "float32"
+      },
+      "bertscore_precision": 0.8546866774559021,
+      "bertscore_recall": 0.8529852032661438,
+      "bertscore_f1": 0.8538351058959961
+    }
+  ]
+}

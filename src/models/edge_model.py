@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class EdgeModel:
     """Edge device model for draft generation using Qwen2.5-Omni"""
     
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-3B", device: str = "cuda", name: str = None, dtype: str = "float16"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-Omni-3B", device: str = "cuda", name: str = None, dtype: str = "float32"):
         # Support both model_name and name parameters for compatibility
         if name is not None:
             self.model_name = name
@@ -973,6 +973,13 @@ class EdgeModel:
             logger.info(f"Creating SimpleSpeculativeDecoding with entropy_threshold=999.0 (Edge-only mode)")
             logger.info(f"Cloud model will be set to None (not needed for Edge-only mode)")
             
+            # Determine language from prompt type
+            # If prompt contains Chinese characters, use Chinese; otherwise use English
+            import re
+            has_chinese = bool(re.search(r'[\u4e00-\u9fff]', prompt))
+            language = "chinese" if has_chinese else "english"
+            logger.info(f"Detected language from prompt: {language}")
+
             # Create spec decoder with VERY HIGH entropy threshold and cloud_model=None
             # This forces Edge-only mode: Cloud is never called for verification
             spec_decoder = SimpleSpeculativeDecoding(
@@ -982,7 +989,9 @@ class EdgeModel:
                 entropy_threshold=999.0,  # CRITICAL: Never call cloud (Edge only)
                 target_sentences=target_sentences,
                 min_chars=min_chars,
-                min_new_tokens_sc=min_new_tokens_sc
+                min_new_tokens_sc=min_new_tokens_sc,
+                language=language,  # Pass detected language
+                prompt_type=prompt_type  # Pass prompt type
             )
             
             logger.info(f"Generating with Edge-only mode:")
