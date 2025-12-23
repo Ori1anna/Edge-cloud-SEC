@@ -124,7 +124,8 @@ class CloudModel:
                 self.processor.tokenizer,
                 n_sentences=2,  # Allow 2 sentences for detailed outputs
                 sentence_end_chars=("。", "."),  # Only count proper sentence endings
-                min_new_tokens=32,  # Minimum tokens before allowing stop
+                min_new_tokens=48,  # Align with speculative decoding defaults
+                min_chars=90,  # Align with speculative decoding defaults
                 prompt_type=prompt_type  # Adjust based on prompt type
             )
             

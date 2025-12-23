@@ -424,6 +424,8 @@ def run_cpu_limited_speculative_decoding_experiment(
     logger.info(f"Caption type: {caption_type}")
     logger.info(f"Language: {language}")
     logger.info(f"Prompt type: {prompt_type}")
+    if input_modality != "audio_only":
+        raise ValueError("Only audio_only input_modality is supported in this script.")
     logger.info(f"Edge device: {edge_device}")
     logger.info(f"Entropy threshold: {entropy_threshold}")
     logger.info(f"K (draft tokens): {k}")
@@ -475,6 +477,8 @@ def run_cpu_limited_speculative_decoding_experiment(
         target_sentences=2,      # Target 2-3 sentences for detailed description
         min_chars=90,            # Minimum 90 characters for 2-3 sentences
         min_new_tokens_sc=48,    # Minimum 48 tokens before allowing stop
+        language=language,
+        prompt_type=prompt_type,
         rank_threshold=rank_threshold
     )
     
@@ -576,7 +580,6 @@ def run_cpu_limited_speculative_decoding_experiment(
                 logger.info(f"  METEOR: {meteor_score:.4f}")
                 logger.info(f"  ROUGE-L: {rouge_l_score:.4f}")
                 logger.info(f"  CIDEr: {cider_score:.4f}")
-                logger.info(f"  BERTScore: Computing in batch...")
                 logger.info(f"  Cloud calls: {spec_metrics['cloud_calls']}")
                 logger.info(f"  Acceptance rate: {spec_metrics['acceptance_rate']:.3f}")
                 logger.info(f"  Cloud call rate: {spec_metrics['cloud_call_rate']:.3f}")
@@ -593,24 +596,6 @@ def run_cpu_limited_speculative_decoding_experiment(
     
     # Calculate overall metrics
     if results:
-        # Compute batch BERTScore with corpus-level IDF
-        logger.info("Computing BERTScore with corpus-level IDF...")
-        candidates = [r['generated_text'] for r in results]
-        references_list = [[r['reference_caption']] for r in results]
-        bertscore_results = metrics.compute_batch_bertscore(candidates, references_list, language=language)
-        
-        # Add BERTScore results to each result and log them
-        for i, result in enumerate(results):
-            result['bertscore_precision'] = bertscore_results[i]['bertscore_precision']
-            result['bertscore_recall'] = bertscore_results[i]['bertscore_recall']
-            result['bertscore_f1'] = bertscore_results[i]['bertscore_f1']
-            
-            # Log BERTScore for each sample
-            logger.info(f"Sample {i+1} BERTScore:")
-            logger.info(f"  Precision: {result['bertscore_precision']:.4f}")
-            logger.info(f"  Recall: {result['bertscore_recall']:.4f}")
-            logger.info(f"  F1: {result['bertscore_f1']:.4f}")
-        
         # Calculate corpus-level BLEU with language-specific tokenization
         import sacrebleu
         hyps = [r['generated_text'] for r in results]
@@ -641,9 +626,6 @@ def run_cpu_limited_speculative_decoding_experiment(
         avg_meteor_sentence = sum(r['meteor_score'] for r in results) / len(results)
         avg_rouge_l_sentence = sum(r['rouge_l_score'] for r in results) / len(results)
         avg_cider = sum(r['cider_score'] for r in results) / len(results)
-        avg_bertscore_precision = sum(r['bertscore_precision'] for r in results) / len(results)
-        avg_bertscore_recall = sum(r['bertscore_recall'] for r in results) / len(results)
-        avg_bertscore_f1 = sum(r['bertscore_f1'] for r in results) / len(results)
         
         # Extract detailed latency metrics
         detailed_latency_data = [r['latency_metrics'] for r in results if r['latency_metrics']]
@@ -695,10 +677,6 @@ def run_cpu_limited_speculative_decoding_experiment(
                 "avg_meteor_sentence": avg_meteor_sentence,
                 "avg_rouge_l_sentence": avg_rouge_l_sentence,
                 "avg_cider": avg_cider,
-                # BERTScore
-                "avg_bertscore_precision": avg_bertscore_precision,
-                "avg_bertscore_recall": avg_bertscore_recall,
-                "avg_bertscore_f1": avg_bertscore_f1,
                 # Latency metrics
                 "latency_metrics": latency_metrics,
                 # Speculative decoding metrics
@@ -743,14 +721,6 @@ def run_cpu_limited_speculative_decoding_experiment(
         logger.info(f"Average METEOR: {avg_meteor_sentence:.4f}")
         logger.info(f"Average ROUGE-L: {avg_rouge_l_sentence:.4f}")
         logger.info(f"Average CIDEr: {avg_cider:.4f}")
-        
-        # Log BERTScore
-        logger.info("=" * 80)
-        logger.info("BERTScore:")
-        logger.info("=" * 80)
-        logger.info(f"Average BERTScore Precision: {avg_bertscore_precision:.4f}")
-        logger.info(f"Average BERTScore Recall: {avg_bertscore_recall:.4f}")
-        logger.info(f"Average BERTScore F1: {avg_bertscore_f1:.4f}")
         
         # Log speculative decoding metrics
         logger.info("Speculative Decoding Metrics:")

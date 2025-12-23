@@ -32,6 +32,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
 from models.cloud_model import CloudModel
 from evaluation.metrics import EvaluationMetrics
+from data.audio_processor import AudioProcessor
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -178,8 +179,13 @@ def run_cloud_optimized_baseline_experiment(
     logger.info(f"Language: {language}")
     logger.info(f"Prompt type: {prompt_type}")
     logger.info(f"Input modality: {input_modality}")
+    if input_modality != "audio_only":
+        raise ValueError("Only audio_only input_modality is supported in this script.")
     logger.info(f"Using device: {device}")
     
+    # Initialize audio processor
+    audio_processor = AudioProcessor(**config['audio'])
+
     # Initialize Cloud model
     cloud_model = CloudModel(
         model_name="Qwen/Qwen2.5-Omni-7B",  # Use same model as original cloud baseline
@@ -220,9 +226,7 @@ def run_cloud_optimized_baseline_experiment(
                 continue
             
             # Load audio waveform
-            import librosa
-            audio_waveform, _ = librosa.load(audio_path, sr=16000)
-            audio_waveform = torch.tensor(audio_waveform, dtype=torch.float32)
+            audio_waveform = audio_processor.load_audio(audio_path)
             
             # Generate text using Cloud Optimized Baseline (same logic as Edge baseline)
             logger.info(f"Generating text for sample {sample.get('file_id', f'sample_{i}')}")
