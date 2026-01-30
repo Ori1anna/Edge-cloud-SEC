@@ -206,7 +206,11 @@ class EvaluationMetrics:
                 # Clean texts
                 hypothesis = hypothesis.replace('<|im_end|>', '').strip()
                 clean_references = [ref.replace('<|im_end|>', '').strip() for ref in references]
-                
+
+                # Clean control chars that break Java METEOR file parsing
+                hypothesis = re.sub(r"[\r\n\t]+", " ", hypothesis).strip()
+                clean_references = [re.sub(r"[\r\n\t]+", " ", ref).strip() for ref in clean_references]
+
                 # Skip empty texts
                 if not hypothesis.strip() or not any(ref.strip() for ref in clean_references):
                     logger.warning("Empty hypothesis or references, returning zero METEOR score")

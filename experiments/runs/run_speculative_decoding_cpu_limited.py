@@ -531,6 +531,8 @@ def run_cpu_limited_speculative_decoding_experiment(
             
             # Clean generated text: remove newlines, tabs, and strip
             # This is critical for pycocoevalcap METEOR which writes to temp files
+            generated_text = generated_text.replace('Human:', '')
+            generated_text = generated_text.replace('Assistant:', '')
             generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
             
             # Calculate traditional metrics
