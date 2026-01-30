@@ -210,6 +210,7 @@ class SimpleSpeculativeDecoding:
             total_draft_tokens = 0
             total_accepted_tokens = 0
             total_corrections = 0
+            cloud_verified_tokens = 0
             
             # Start GPU monitoring thread
             gpu_monitor_data = {'gpu_util_samples': [], 'gpu_memory_gb': 0.0}
@@ -564,6 +565,7 @@ class SimpleSpeculativeDecoding:
                     else:
                         logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
                         cloud_calls += 1
+                        cloud_verified_tokens += len(draft_tokens)
                         
                         # Step 4: Cloud model verifies draft tokens
                         # Pass full context including audio features
@@ -823,8 +825,11 @@ class SimpleSpeculativeDecoding:
                 'total_draft_tokens': total_draft_tokens,
                 'total_accepted_tokens': total_accepted_tokens,
                 'total_corrections': total_corrections,
+                'cloud_verified_tokens': cloud_verified_tokens,
                 'acceptance_rate': total_accepted_tokens / total_draft_tokens if total_draft_tokens > 0 else 0,
                 'correction_rate': total_corrections / cloud_calls if cloud_calls > 0 else 0,
+                'token_level_cloud_rate': cloud_verified_tokens / len(generated_tokens) if len(generated_tokens) > 0 else 0,
+                'corrected_token_rate': total_corrections / len(generated_tokens) if len(generated_tokens) > 0 else 0,
                 'prefill_time': current_context.get('prefill_time', 0.0),
                 'cloud_call_rate': cloud_calls / (total_draft_tokens // self.k + 1) if total_draft_tokens > 0 else 0
             }

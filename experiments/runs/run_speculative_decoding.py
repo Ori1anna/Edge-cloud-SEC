@@ -214,9 +214,12 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                 'total_draft_tokens': latency_metrics.get('total_draft_tokens', 0),
                 'total_accepted_tokens': latency_metrics.get('total_accepted_tokens', 0),
                 'total_corrections': latency_metrics.get('total_corrections', 0),
+                'cloud_verified_tokens': latency_metrics.get('cloud_verified_tokens', 0),
                 'acceptance_rate': latency_metrics.get('acceptance_rate', 0),
                 'correction_rate': latency_metrics.get('correction_rate', 0),
-                'cloud_call_rate': latency_metrics.get('cloud_call_rate', 0)
+                'cloud_call_rate': latency_metrics.get('cloud_call_rate', 0),
+                'token_level_cloud_rate': latency_metrics.get('token_level_cloud_rate', 0),
+                'corrected_token_rate': latency_metrics.get('corrected_token_rate', 0)
             }
             
             # Store results
@@ -268,6 +271,8 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                     logger.info(f"    Acceptance Rate: {spec_metrics.get('acceptance_rate', 0):.2%}")
                     logger.info(f"    Correction Rate: {spec_metrics.get('correction_rate', 0):.2%}")
                     logger.info(f"    Cloud Call Rate: {spec_metrics.get('cloud_call_rate', 0):.2%}")
+                    logger.info(f"    Token-level Cloud Rate: {spec_metrics.get('token_level_cloud_rate', 0):.2%}")
+                    logger.info(f"    Corrected Token Rate: {spec_metrics.get('corrected_token_rate', 0):.2%}")
                 logger.info("")
             
         except Exception as e:
@@ -295,6 +300,8 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
             avg_acceptance_rate = sum(m.get('acceptance_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
             avg_correction_rate = sum(m.get('correction_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
             avg_cloud_call_rate = sum(m.get('cloud_call_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
+            avg_token_level_cloud_rate = sum(m.get('token_level_cloud_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
+            avg_corrected_token_rate = sum(m.get('corrected_token_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
             
             aggregated_spec_metrics = {
                 "total_time_mean": total_time_mean,
@@ -302,6 +309,8 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                 "avg_acceptance_rate": avg_acceptance_rate,
                 "avg_correction_rate": avg_correction_rate,
                 "avg_cloud_call_rate": avg_cloud_call_rate,
+                "avg_token_level_cloud_rate": avg_token_level_cloud_rate,
+                "avg_corrected_token_rate": avg_corrected_token_rate,
                 "total_samples": len(spec_metrics_data)
             }
         else:
@@ -363,6 +372,8 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
             logger.info(f"  Average Acceptance Rate: {aggregated_spec_metrics.get('avg_acceptance_rate', 0):.2%}")
             logger.info(f"  Average Correction Rate: {aggregated_spec_metrics.get('avg_correction_rate', 0):.2%}")
             logger.info(f"  Average Cloud Call Rate: {aggregated_spec_metrics.get('avg_cloud_call_rate', 0):.2%}")
+            logger.info(f"  Average Token-level Cloud Rate: {aggregated_spec_metrics.get('avg_token_level_cloud_rate', 0):.2%}")
+            logger.info(f"  Average Corrected Token Rate: {aggregated_spec_metrics.get('avg_corrected_token_rate', 0):.2%}")
             logger.info(f"  Total Samples: {aggregated_spec_metrics.get('total_samples', 0)}")
         
         return overall_results

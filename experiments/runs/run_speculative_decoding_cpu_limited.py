@@ -536,9 +536,12 @@ def run_cpu_limited_speculative_decoding_experiment(
                 'total_draft_tokens': latency_metrics.get('total_draft_tokens', 0),
                 'total_accepted_tokens': latency_metrics.get('total_accepted_tokens', 0),
                 'total_corrections': latency_metrics.get('total_corrections', 0),
+                'cloud_verified_tokens': latency_metrics.get('cloud_verified_tokens', 0),
                 'acceptance_rate': latency_metrics.get('acceptance_rate', 0),
                 'correction_rate': latency_metrics.get('correction_rate', 0),
-                'cloud_call_rate': latency_metrics.get('cloud_call_rate', 0)
+                'cloud_call_rate': latency_metrics.get('cloud_call_rate', 0),
+                'token_level_cloud_rate': latency_metrics.get('token_level_cloud_rate', 0),
+                'corrected_token_rate': latency_metrics.get('corrected_token_rate', 0)
             }
             
             # Store results
@@ -687,6 +690,8 @@ def run_cpu_limited_speculative_decoding_experiment(
                     "avg_acceptance_rate": avg_acceptance_rate,
                     "avg_correction_rate": avg_correction_rate,
                     "avg_cloud_call_rate": avg_cloud_call_rate,
+                "avg_token_level_cloud_rate": avg_token_level_cloud_rate,
+                "avg_corrected_token_rate": avg_corrected_token_rate,
                     "total_samples": len(results)
                 }
             },
