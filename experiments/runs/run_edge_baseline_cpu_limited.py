@@ -480,8 +480,9 @@ def run_cpu_limited_edge_experiment(config_path: str = "configs/default.yaml",
                 prompt_type=prompt_type     # Pass prompt type for stopping criteria
             )
             
-            # Clean generated text: remove newlines, tabs, and strip
-            # This is critical for pycocoevalcap METEOR which writes to temp files
+            # Clean generated text for reliable metrics
+            generated_text = generated_text.replace('Human:', '')
+            generated_text = generated_text.replace('Assistant:', '')
             generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
             
             # Calculate traditional metrics

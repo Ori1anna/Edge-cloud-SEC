@@ -175,6 +175,11 @@ def run_edge_baseline_experiment(config_path: str = "configs/default.yaml",
             # Generate draft with detailed latency metrics
             generated_text, detailed_latency = edge_model.generate_draft(audio_waveform, prompt_template)
             
+            # Clean generated text for reliable metrics
+            generated_text = generated_text.replace('Human:', '')
+            generated_text = generated_text.replace('Assistant:', '')
+            generated_text = generated_text.replace('\n', ' ').replace('\t', ' ').strip()
+            
             # Calculate metrics
             bleu_score = metrics.compute_bleu([reference_caption], generated_text)
             cider_score = metrics.compute_cider([reference_caption], generated_text)
