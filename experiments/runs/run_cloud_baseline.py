@@ -104,7 +104,8 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 - 使用第三人称或“说话人”等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
-            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. In the audio, respond in English only, use third‑person, avoid dialogue style."
+            # return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用中文用一句话描述上面给出的音频中说话人的情感"
@@ -164,7 +165,7 @@ def run_cloud_baseline_experiment(config_path: str = "configs/default.yaml",
     audio_processor = AudioProcessor(**config['audio'])
     cloud_model = CloudModel(**config['models']['cloud'])
     metrics = EvaluationMetrics()
-    
+      
     # Get prompt template
     prompt_template = get_prompt_template(prompt_type, language)
     logger.info(f"Using prompt template: {prompt_template}")

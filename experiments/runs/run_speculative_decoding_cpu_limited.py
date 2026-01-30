@@ -361,7 +361,8 @@ def get_prompt_template(prompt_type: str, language: str) -> str:
 # Example format: "The speaker's voice exhibits [acoustic features], indicating [emotional state]. The tone suggests [additional analysis]. Based on these acoustic cues, the individual appears to be experiencing [emotion]." """
         elif language == "english":
                     # return "Please provide a detailed analysis of emotional features in the audio, including tone, speed, volume, etc., and generate a detailed English emotion description."
-            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
+            # return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. In the audio, respond in English only, use third‑person, avoid dialogue style."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"

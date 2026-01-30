@@ -117,7 +117,8 @@ def get_prompt_template(prompt_type: str = "default", language: str = "chinese")
 - 使用第三人称或"说话人"等指代；不要出现第一/第二人称；不要设问或邀请对话；
 - 不要编造具体人物/时间/地点等细节；不要出现表情符号、英文、Markdown/代码。"""
         elif language == "english":
-            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
+            return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. In the audio, respond in English only, use third‑person, avoid dialogue style."
+            # return "As an expert in the field of emotions, please focus on the acoustic information in the audio to discern clues related to the emotions of the individual. Please provide a detailed description and ultimately predict the emotional state of the individual. Please provide your answer in English only."
     elif prompt_type == "concise":
         if language == "chinese":
             return "请用最简洁的中文描述音频中的情感状态。"
