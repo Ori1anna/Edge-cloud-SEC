@@ -31,7 +31,10 @@ class SimpleSpeculativeDecoding:
                  min_new_tokens_sc: int = 48,
                  language: str = "chinese",
                  prompt_type: str = "detailed",
-                 rank_threshold: int = 20):
+                 rank_threshold: int = 20,
+                 gate_type: str = "entropy",
+                 margin_threshold: float = 0.1,
+                 logprob_threshold: float = -2.0):
         """
         Initialize speculative decoding system
         
@@ -57,12 +60,15 @@ class SimpleSpeculativeDecoding:
         self.language = language
         self.prompt_type = prompt_type
         self.rank_threshold = rank_threshold
+        self.gate_type = gate_type
+        self.margin_threshold = margin_threshold
+        self.logprob_threshold = logprob_threshold
         
         # Log if running in Edge-only mode
         if cloud_model is None:
             logger.info("Running in Edge-only mode (cloud_model=None)")
         
-        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}, language={language}, prompt_type={prompt_type}, rank_threshold={rank_threshold}")
+        logger.info(f"Initialized SimpleSpeculativeDecoding with entropy_threshold={entropy_threshold}, k={k}, target_sentences={target_sentences}, language={language}, prompt_type={prompt_type}, rank_threshold={rank_threshold}, gate_type={gate_type}, margin_threshold={margin_threshold}, logprob_threshold={logprob_threshold}")
     
     def _prepare_initial_context(self, audio_features: torch.Tensor, prompt: str, transcription: str = None) -> dict:
         """Prepare initial context from audio and prompt"""
@@ -441,6 +447,23 @@ class SimpleSpeculativeDecoding:
                 total_draft_tokens += len(draft_tokens)
                 logger.info(f"Edge generated {len(draft_tokens)} tokens: {draft_tokens}")
                 
+                # Step 2a: Compute margin/logprob stats for gating
+                margin_min = None
+                logprob_min = None
+                try:
+                    logits_f32 = draft_logits.float()
+                    log_probs = torch.log_softmax(logits_f32, dim=-1)
+                    top2 = torch.topk(logits_f32, k=2, dim=-1).values
+                    margins = (top2[:, 0] - top2[:, 1]).cpu().tolist()
+                    margin_min = min(margins) if margins else None
+                    # log-prob of chosen draft tokens
+                    dp = []
+                    for i, tok in enumerate(draft_tokens):
+                        dp.append(log_probs[i, tok].item())
+                    logprob_min = min(dp) if dp else None
+                except Exception as e:
+                    logger.debug(f"Failed to compute margin/logprob stats: {e}")
+
                 # Step 2: Calculate uncertainty (entropy) for each draft token
                 uncertainties = self._calculate_entropy_uncertainty(draft_logits)
                 logger.info(f"Token uncertainties: {uncertainties}")
@@ -452,9 +475,23 @@ class SimpleSpeculativeDecoding:
                     needs_cloud_verification = True
                     max_uncertainty = self.entropy_threshold + 0.1  # Force above threshold
                 else:
-                    # Step 3: Check if we need Cloud verification
+                    # Step 3: Check if we need Cloud verification based on selected gate
                     max_uncertainty = max(uncertainties) if uncertainties else 0
-                    needs_cloud_verification = max_uncertainty > self.entropy_threshold
+                    if self.gate_type == "entropy":
+                        needs_cloud_verification = max_uncertainty > self.entropy_threshold
+                    elif self.gate_type == "margin":
+                        if margin_min is None:
+                            needs_cloud_verification = False
+                        else:
+                            needs_cloud_verification = margin_min < self.margin_threshold
+                    elif self.gate_type == "logprob":
+                        if logprob_min is None:
+                            needs_cloud_verification = False
+                        else:
+                            needs_cloud_verification = logprob_min < self.logprob_threshold
+                    else:
+                        logger.warning(f"Unknown gate_type {self.gate_type}, falling back to entropy")
+                        needs_cloud_verification = max_uncertainty > self.entropy_threshold
                     
                     # Additional check: Punctuation flooding detection
                     # If draft block has too many punctuation tokens even with low entropy, force cloud verification
@@ -563,7 +600,7 @@ class SimpleSpeculativeDecoding:
                         
                         # Don't set needs_cloud_verification to False - just continue with Edge tokens
                     else:
-                        logger.info(f"High uncertainty ({max_uncertainty:.3f} > {self.entropy_threshold}), calling Cloud for verification")
+                        logger.info(f"Gate={self.gate_type} -> calling Cloud for verification (max_entropy={max_uncertainty:.3f}, margin_min={margin_min}, logprob_min={logprob_min})")
                         cloud_calls += 1
                         cloud_verified_tokens += len(draft_tokens)
                         
@@ -652,7 +689,7 @@ class SimpleSpeculativeDecoding:
                                     should_stop = True
                                     break
                 else:
-                    logger.info(f"Low uncertainty ({max_uncertainty:.3f} <= {self.entropy_threshold}), accepting all Edge tokens")
+                    logger.info(f"Gate={self.gate_type} -> accepting all Edge tokens (max_entropy={max_uncertainty:.3f}, margin_min={margin_min}, logprob_min={logprob_min})")
                     should_stop = False  # Initialize should_stop for low uncertainty path
                     
                     # Record TTFT when first tokens are actually accepted

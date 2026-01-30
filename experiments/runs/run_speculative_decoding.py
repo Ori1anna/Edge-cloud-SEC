@@ -115,7 +115,10 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
                                       language: str = "chinese",
                                       prompt_type: str = "default",
                                       entropy_threshold: float = 1.5,
-                                      k: int = 3):
+                                      k: int = 3,
+                                      gate_type: str = "entropy",
+                                      margin_threshold: float = 0.1,
+                                      logprob_threshold: float = -2.0):
     """
     Run speculative decoding experiment with flexible configuration
     
@@ -131,6 +134,9 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
         prompt_type: Type of prompt to use ("default", "detailed", "concise")
         entropy_threshold: Threshold for entropy-based uncertainty
         k: Number of draft tokens to generate
+        gate_type: Gating strategy ("entropy", "margin", "logprob")
+        margin_threshold: Threshold for top-1 vs top-2 margin gating
+        logprob_threshold: Threshold for token log-prob gating
     """
     
     # Load configuration
@@ -149,7 +155,7 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
     logger.info(f"Caption type: {caption_type}")
     logger.info(f"Language: {language}")
     logger.info(f"Prompt type: {prompt_type}")
-    logger.info(f"Speculative Decoding params: entropy_threshold={entropy_threshold}, k={k}")
+    logger.info(f"Speculative Decoding params: entropy_threshold={entropy_threshold}, k={k}, gate_type={gate_type}, margin_threshold={margin_threshold}, logprob_threshold={logprob_threshold}")
     
     # Initialize models and processors
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -164,7 +170,10 @@ def run_speculative_decoding_experiment(config_path: str = "configs/default.yaml
         edge_model=edge_model,
         cloud_model=cloud_model,
         entropy_threshold=entropy_threshold,
-        k=k
+        k=k,
+        gate_type=gate_type,
+        margin_threshold=margin_threshold,
+        logprob_threshold=logprob_threshold
     )
     
     metrics = EvaluationMetrics()
@@ -401,6 +410,12 @@ def main():
                        help="Threshold for entropy-based uncertainty")
     parser.add_argument("--k", type=int, default=3, 
                        help="Number of draft tokens to generate")
+    parser.add_argument("--gate_type", default="entropy", choices=["entropy", "margin", "logprob"],
+                       help="Gating strategy: entropy, margin, or logprob")
+    parser.add_argument("--margin_threshold", type=float, default=0.1,
+                       help="Top-1 vs Top-2 margin threshold for margin gating")
+    parser.add_argument("--logprob_threshold", type=float, default=-2.0,
+                       help="Token log-prob threshold for logprob gating")
     
     args = parser.parse_args()
     
@@ -415,7 +430,10 @@ def main():
         language=args.language,
         prompt_type=args.prompt_type,
         entropy_threshold=args.entropy_threshold,
-        k=args.k
+        k=args.k,
+        gate_type=args.gate_type,
+        margin_threshold=args.margin_threshold,
+        logprob_threshold=args.logprob_threshold
     )
 
 if __name__ == "__main__":

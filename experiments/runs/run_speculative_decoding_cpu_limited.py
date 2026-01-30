@@ -385,6 +385,9 @@ def run_cpu_limited_speculative_decoding_experiment(
     edge_device: str = "cpu",
     entropy_threshold: float = 3.0,
     k: int = 5,
+    gate_type: str = "entropy",
+    margin_threshold: float = 0.1,
+    logprob_threshold: float = -2.0,
     max_cpu_cores: int = 2,
     max_memory_gb: float = 6.0,
     rank_threshold: int = 20):
@@ -407,6 +410,9 @@ def run_cpu_limited_speculative_decoding_experiment(
         max_cpu_cores: Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)
         max_memory_gb: Maximum memory for edge model (iPhone 15 Plus: 8GB total, reserve 2GB)
         rank_threshold: Rank threshold for cloud verification (default: 20, accepts top-N ranked tokens)
+        gate_type: Gating strategy ("entropy", "margin", "logprob")
+        margin_threshold: Threshold for top-1 vs top-2 margin gating
+        logprob_threshold: Threshold for token log-prob gating
     """
     
     # Load configuration
@@ -429,6 +435,9 @@ def run_cpu_limited_speculative_decoding_experiment(
         raise ValueError("Only audio_only input_modality is supported in this script.")
     logger.info(f"Edge device: {edge_device}")
     logger.info(f"Entropy threshold: {entropy_threshold}")
+    logger.info(f"Gate type: {gate_type}")
+    logger.info(f"Margin threshold: {margin_threshold}")
+    logger.info(f"Logprob threshold: {logprob_threshold}")
     logger.info(f"K (draft tokens): {k}")
     logger.info(f"Rank threshold: {rank_threshold}")
     if edge_device == "cpu":
@@ -480,7 +489,10 @@ def run_cpu_limited_speculative_decoding_experiment(
         min_new_tokens_sc=48,    # Minimum 48 tokens before allowing stop
         language=language,
         prompt_type=prompt_type,
-        rank_threshold=rank_threshold
+        rank_threshold=rank_threshold,
+        gate_type=gate_type,
+        margin_threshold=margin_threshold,
+        logprob_threshold=logprob_threshold
     )
     
     metrics = EvaluationMetrics()
@@ -793,6 +805,12 @@ def main():
                        help="Entropy threshold for cloud verification (Recommended: 5.5-6.0 for fluency, 3.0-3.5 for quality, default changed to 3.5 for better repetition control)")
     parser.add_argument("--k", type=int, default=5, 
                        help="Number of draft tokens to generate (Recommended: 4 for fluency, 6 for quality)")
+    parser.add_argument("--gate_type", default="entropy", choices=["entropy", "margin", "logprob"],
+                       help="Gating strategy: entropy, margin, or logprob")
+    parser.add_argument("--margin_threshold", type=float, default=0.1,
+                       help="Top-1 vs Top-2 margin threshold for margin gating")
+    parser.add_argument("--logprob_threshold", type=float, default=-2.0,
+                       help="Token log-prob threshold for logprob gating")
     parser.add_argument("--max_cpu_cores", type=int, default=2, 
                        help="Maximum CPU cores for edge model (iPhone 15 Plus: 2 performance cores)")
     parser.add_argument("--max_memory_gb", type=float, default=16.0, 
@@ -816,6 +834,9 @@ def main():
         edge_device=args.edge_device,
         entropy_threshold=args.entropy_threshold,
         k=args.k,
+        gate_type=args.gate_type,
+        margin_threshold=args.margin_threshold,
+        logprob_threshold=args.logprob_threshold,
         max_cpu_cores=args.max_cpu_cores,
         max_memory_gb=args.max_memory_gb,
         rank_threshold=args.rank_threshold
