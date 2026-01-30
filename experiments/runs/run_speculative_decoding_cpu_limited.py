@@ -659,6 +659,13 @@ def run_cpu_limited_speculative_decoding_experiment(
         avg_acceptance_rate = total_accepted_tokens / total_draft_tokens if total_draft_tokens > 0 else 0
         avg_correction_rate = total_corrections / total_cloud_calls if total_cloud_calls > 0 else 0
         avg_cloud_call_rate = total_cloud_calls / len(results) if results else 0
+        spec_metrics_data = [r['speculative_decoding_metrics'] for r in results if r.get('speculative_decoding_metrics')]
+        if spec_metrics_data:
+            avg_token_level_cloud_rate = sum(m.get('token_level_cloud_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
+            avg_corrected_token_rate = sum(m.get('corrected_token_rate', 0) for m in spec_metrics_data) / len(spec_metrics_data)
+        else:
+            avg_token_level_cloud_rate = 0
+            avg_corrected_token_rate = 0
         
         overall_results = {
             "experiment_config": {
